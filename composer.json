@@ -1,0 +1,22 @@
+{
+  "name": "rabbit/kafka",
+  "description": "rabbit kafka",
+  "type": "library",
+  "require": {
+    "rabbit/framework": "dev-master",
+    "rabbit/socket": "dev-master",
+    "lcobucci/clock": "^1.0"
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "albert",
+      "email": "63851587@qq.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "rabbit\\kafka\\": "src/"
+    }
+  }
+}
