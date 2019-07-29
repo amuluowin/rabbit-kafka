@@ -15,7 +15,7 @@ class ListGroup extends Protocol
      */
     public function encode(array $payloads = []): string
     {
-        $header = $this->requestHeader('kafka-php', self::LIST_GROUPS_REQUEST, self::LIST_GROUPS_REQUEST);
+        $header = $this->requestHeader('rabbit-kafka', self::LIST_GROUPS_REQUEST, self::LIST_GROUPS_REQUEST);
 
         return self::encodeString($header, self::PACK_INT32);
     }

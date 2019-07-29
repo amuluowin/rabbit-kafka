@@ -21,7 +21,7 @@ class Offset extends Protocol
             $payloads['replica_id'] = -1;
         }
 
-        $header = $this->requestHeader('kafka-php', self::OFFSET_REQUEST, self::OFFSET_REQUEST);
+        $header = $this->requestHeader('rabbit-kafka', self::OFFSET_REQUEST, self::OFFSET_REQUEST);
         $data = self::pack(self::BIT_B32, (string)$payloads['replica_id']);
         $data .= self::encodeArray($payloads['data'], [$this, 'encodeOffsetTopic']);
         $data = self::encodeString($header . $data, self::PACK_INT32);

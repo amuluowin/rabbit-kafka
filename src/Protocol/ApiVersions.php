@@ -12,7 +12,7 @@ class ApiVersions extends Protocol
      */
     public function encode(array $payloads = []): string
     {
-        $header = $this->requestHeader('kafka-php', self::API_VERSIONS_REQUEST, self::API_VERSIONS_REQUEST);
+        $header = $this->requestHeader('rabbit-kafka', self::API_VERSIONS_REQUEST, self::API_VERSIONS_REQUEST);
 
         return self::encodeString($header, self::PACK_INT32);
     }

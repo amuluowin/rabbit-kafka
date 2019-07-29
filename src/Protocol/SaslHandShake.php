@@ -41,7 +41,7 @@ class SaslHandShake extends Protocol
             );
         }
 
-        $header = $this->requestHeader('kafka-php', self::SASL_HAND_SHAKE_REQUEST, self::SASL_HAND_SHAKE_REQUEST);
+        $header = $this->requestHeader('rabbit-kafka', self::SASL_HAND_SHAKE_REQUEST, self::SASL_HAND_SHAKE_REQUEST);
         $data = self::encodeString($mechanism, self::PACK_INT16);
         $data = self::encodeString($header . $data, self::PACK_INT32);
 

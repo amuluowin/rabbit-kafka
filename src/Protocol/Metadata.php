@@ -24,7 +24,7 @@ class Metadata extends Protocol
             }
         }
 
-        $header = $this->requestHeader('kafka-php', self::METADATA_REQUEST, self::METADATA_REQUEST);
+        $header = $this->requestHeader('rabbit-kafka', self::METADATA_REQUEST, self::METADATA_REQUEST);
         $data = self::encodeArray($payloads, [$this, 'encodeString'], self::PACK_INT16);
         $data = self::encodeString($header . $data, self::PACK_INT32);
 

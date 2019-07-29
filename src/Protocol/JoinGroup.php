@@ -41,7 +41,7 @@ class JoinGroup extends Protocol
             $payloads['rebalance_timeout'] = $payloads['session_timeout'];
         }
 
-        $header = $this->requestHeader('kafka-php', self::JOIN_GROUP_REQUEST, self::JOIN_GROUP_REQUEST);
+        $header = $this->requestHeader('rabbit-kafka', self::JOIN_GROUP_REQUEST, self::JOIN_GROUP_REQUEST);
         $data = self::encodeString($payloads['group_id'], self::PACK_INT16);
         $data .= self::pack(self::BIT_B32, (string)$payloads['session_timeout']);
 

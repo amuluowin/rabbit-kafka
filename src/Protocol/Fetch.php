@@ -36,7 +36,7 @@ class Fetch extends Protocol
             $payloads['min_bytes'] = 64 * 1024; // 64k
         }
 
-        $header = $this->requestHeader('kafka-php', self::FETCH_REQUEST, self::FETCH_REQUEST);
+        $header = $this->requestHeader('rabbit-kafka', self::FETCH_REQUEST, self::FETCH_REQUEST);
         $data = self::pack(self::BIT_B32, (string)$payloads['replica_id']);
         $data .= self::pack(self::BIT_B32, (string)$payloads['max_wait_time']);
         $data .= self::pack(self::BIT_B32, (string)$payloads['min_bytes']);

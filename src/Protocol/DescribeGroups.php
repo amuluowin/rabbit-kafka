@@ -15,7 +15,7 @@ class DescribeGroups extends Protocol
      */
     public function encode(array $payloads = []): string
     {
-        $header = $this->requestHeader('kafka-php', self::DESCRIBE_GROUPS_REQUEST, self::DESCRIBE_GROUPS_REQUEST);
+        $header = $this->requestHeader('rabbit-kafka', self::DESCRIBE_GROUPS_REQUEST, self::DESCRIBE_GROUPS_REQUEST);
         $data = self::encodeArray($payloads, [$this, 'encodeString'], self::PACK_INT16);
 
         return self::encodeString($header . $data, self::PACK_INT32);

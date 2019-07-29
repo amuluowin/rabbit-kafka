@@ -33,7 +33,7 @@ class SyncGroup extends Protocol
             throw new ProtocolException('given sync group data invalid. `data` is undefined.');
         }
 
-        $header = $this->requestHeader('kafka-php', self::SYNC_GROUP_REQUEST, self::SYNC_GROUP_REQUEST);
+        $header = $this->requestHeader('rabbit-kafka', self::SYNC_GROUP_REQUEST, self::SYNC_GROUP_REQUEST);
         $data = self::encodeString($payloads['group_id'], self::PACK_INT16);
         $data .= self::pack(self::BIT_B32, (string)$payloads['generation_id']);
         $data .= self::encodeString($payloads['member_id'], self::PACK_INT16);

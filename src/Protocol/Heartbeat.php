@@ -29,7 +29,7 @@ class Heartbeat extends Protocol
             throw new ProtocolException('given heartbeat data invalid. `member_id` is undefined.');
         }
 
-        $header = $this->requestHeader('kafka-php', self::HEART_BEAT_REQUEST, self::HEART_BEAT_REQUEST);
+        $header = $this->requestHeader('rabbit-kafka', self::HEART_BEAT_REQUEST, self::HEART_BEAT_REQUEST);
         $data = self::encodeString($payloads['group_id'], self::PACK_INT16);
         $data .= self::pack(self::BIT_B32, (string)$payloads['generation_id']);
         $data .= self::encodeString($payloads['member_id'], self::PACK_INT16);

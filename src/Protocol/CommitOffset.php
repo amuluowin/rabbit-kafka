@@ -39,7 +39,7 @@ class CommitOffset extends Protocol
         }
 
         $version = $this->getApiVersion(self::OFFSET_COMMIT_REQUEST);
-        $header = $this->requestHeader('kafka-php', self::OFFSET_COMMIT_REQUEST, self::OFFSET_COMMIT_REQUEST);
+        $header = $this->requestHeader('rabbit-kafka', self::OFFSET_COMMIT_REQUEST, self::OFFSET_COMMIT_REQUEST);
 
         $data = self::encodeString($payloads['group_id'], self::PACK_INT16);
 

@@ -25,7 +25,7 @@ class LeaveGroup extends Protocol
             throw new ProtocolException('given leave group data invalid. `member_id` is undefined.');
         }
 
-        $header = $this->requestHeader('kafka-php', self::LEAVE_GROUP_REQUEST, self::LEAVE_GROUP_REQUEST);
+        $header = $this->requestHeader('rabbit-kafka', self::LEAVE_GROUP_REQUEST, self::LEAVE_GROUP_REQUEST);
         $data = self::encodeString($payloads['group_id'], self::PACK_INT16);
         $data .= self::encodeString($payloads['member_id'], self::PACK_INT16);
 

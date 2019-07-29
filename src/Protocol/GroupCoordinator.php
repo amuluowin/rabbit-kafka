@@ -21,7 +21,7 @@ class GroupCoordinator extends Protocol
             throw new ProtocolException('given group coordinator invalid. `group_id` is undefined.');
         }
 
-        $header = $this->requestHeader('kafka-php', self::GROUP_COORDINATOR_REQUEST, self::GROUP_COORDINATOR_REQUEST);
+        $header = $this->requestHeader('rabbit-kafka', self::GROUP_COORDINATOR_REQUEST, self::GROUP_COORDINATOR_REQUEST);
         $data = self::encodeString($payloads['group_id'], self::PACK_INT16);
         $data = self::encodeString($header . $data, self::PACK_INT32);
 

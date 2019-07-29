@@ -25,7 +25,7 @@ class FetchOffset extends Protocol
             throw new ProtocolException('given fetch offset data invalid. `group_id` is undefined.');
         }
 
-        $header = $this->requestHeader('kafka-php', self::OFFSET_FETCH_REQUEST, self::OFFSET_FETCH_REQUEST);
+        $header = $this->requestHeader('rabbit-kafka', self::OFFSET_FETCH_REQUEST, self::OFFSET_FETCH_REQUEST);
         $data = self::encodeString($payloads['group_id'], self::PACK_INT16);
         $data .= self::encodeArray($payloads['data'], [$this, 'encodeOffsetTopic']);
         $data = self::encodeString($header . $data, self::PACK_INT32);
