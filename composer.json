@@ -3,6 +3,7 @@
   "description": "rabbit kafka",
   "type": "library",
   "require": {
+    "php": "^7.1",
     "rabbit/framework": "dev-master",
     "rabbit/socket": "dev-master",
     "lcobucci/clock": "^1.0"

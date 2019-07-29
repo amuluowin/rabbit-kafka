@@ -52,7 +52,7 @@ class Produce extends Protocol
             throw new ProtocolException('given procude data invalid. `data` is undefined.');
         }
 
-        $header = $this->requestHeader('kafka-php', 0, self::PRODUCE_REQUEST);
+        $header = $this->requestHeader('rabbit-kafka', 0, self::PRODUCE_REQUEST);
         $data = self::pack(self::BIT_B16, (string)($payloads['required_ack'] ?? 0));
         $data .= self::pack(self::BIT_B32, (string)($payloads['timeout'] ?? 100));
         $data .= self::encodeArray(

@@ -74,7 +74,7 @@ abstract class Config
      * @var mixed[]
      */
     private static $defaults = [
-        'clientId' => 'kafka-php',
+        'clientId' => 'rabbit-kafka',
         'brokerVersion' => '0.10.1.0',
         'metadataBrokerList' => '',
         'messageMaxBytes' => 1000000,

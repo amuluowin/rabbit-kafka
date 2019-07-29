@@ -18,8 +18,6 @@ class Client
     private $broker;
     /** @var RecordValidator */
     private $recordValidator;
-    /** @var bool */
-    private $isSyncMeta = false;
 
     /**
      * Client constructor.
@@ -38,6 +36,14 @@ class Client
     }
 
     /**
+     * @throws Exception
+     */
+    public function coInit()
+    {
+        $this->syncMeta();
+    }
+
+    /**
      * @param array $recordSet
      * @return array
      * @throws Exception
@@ -45,10 +51,6 @@ class Client
      */
     public function send(array $recordSet): array
     {
-        if (!$this->isSyncMeta) {
-            $this->isSyncMeta = true;
-            $this->syncMeta();
-        }
         /** @var ProducerConfig $config */
         $config = $this->broker->getConfig();
         $requiredAck = $config->getRequiredAck();
@@ -71,14 +73,21 @@ class Client
 
             $this->logger->debug('Send message start, params:' . json_encode($params));
             $requestData = \rabbit\kafka\Protocol::encode(\rabbit\kafka\Protocol::PRODUCE_REQUEST, $params);
-            $connect->send($requestData);
-
-            if ($requiredAck !== 0) { // If it is 0 the server will not send any response
-                $dataLen = Protocol::unpack(Protocol::BIT_B32, $connect->recv(4));
-                $recordSet = $connect->recv($dataLen);
-                $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($recordSet, 0, 4));
-                $ret = \rabbit\kafka\Protocol::decode(\rabbit\kafka\Protocol::PRODUCE_REQUEST, substr($recordSet, 4));
-                $result[] = $ret;
+            if ($requiredAck !== 0) {
+                $group = waitGroup();
+                $group->add(null, function () use ($connect, $requestData) {
+                    $connect->send($requestData);
+                    $dataLen = Protocol::unpack(Protocol::BIT_B32, $connect->recv(4));
+                    $recordSet = $connect->recv($dataLen);
+                    $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($recordSet, 0, 4));
+                    return \rabbit\kafka\Protocol::decode(\rabbit\kafka\Protocol::PRODUCE_REQUEST,
+                        substr($recordSet, 4));
+                });
+                $result = $group->wait($timeout / 1000);
+            } else {
+                rgo(function () use ($connect, $requestData) {
+                    $connect->send($requestData);
+                });
             }
         }
 
