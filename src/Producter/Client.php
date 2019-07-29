@@ -7,11 +7,12 @@ use DI\DependencyException;
 use DI\NotFoundException;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
+use rabbit\contract\InitInterface;
 use rabbit\kafka\Broker;
 use rabbit\kafka\Exception;
 use rabbit\kafka\Protocol\Protocol;
 
-class Client
+class Client implements InitInterface
 {
     use LoggerAwareTrait;
     /** @var Broker */
@@ -35,10 +36,7 @@ class Client
         \rabbit\kafka\Protocol::init($broker->getConfig()->getBrokerVersion(), $logger);
     }
 
-    /**
-     * @throws Exception
-     */
-    public function coInit()
+    public function init()
     {
         $this->syncMeta();
     }
