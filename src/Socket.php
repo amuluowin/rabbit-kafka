@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace rabbit\kafka;
 
-use Amp\Loop;
 use rabbit\kafka\Protocol\Protocol;
 use function fclose;
 use function feof;
@@ -62,30 +61,24 @@ class Socket extends CommonSocket
         stream_set_blocking($this->stream, false);
         stream_set_read_buffer($this->stream, 0);
 
-        $this->readWatcherId = Loop::onReadable(
+        swoole_event_add(
             $this->stream,
             function (): void {
-                do {
-                    if ($this->isSocketDead()) {
-                        $this->reconnect();
-                        return;
-                    }
+                if ($this->isSocketDead()) {
+                    $this->reconnect();
+                    return;
+                }
 
-                    $newData = @fread($this->stream, self::READ_MAX_LENGTH);
+                $newData = @fread($this->stream, self::READ_MAX_LENGTH);
 
-                    if ($newData) {
-                        $this->read($newData);
-                    }
-                } while ($newData);
-            }
-        );
-
-        $this->writeWatcherId = Loop::onWritable(
-            $this->stream,
+                if ($newData) {
+                    $this->read($newData);
+                }
+            },
             function (): void {
                 $this->write();
             },
-            ['enable' => false] // <-- let's initialize the watcher as "disabled"
+            SWOOLE_EVENT_READ | SWOOLE_EVENT_WRITE
         );
     }
 
@@ -102,8 +95,7 @@ class Socket extends CommonSocket
 
     public function close(): void
     {
-        Loop::cancel($this->readWatcherId);
-        Loop::cancel($this->writeWatcherId);
+        swoole_event_del($this->stream);
 
         if (is_resource($this->stream)) {
             fclose($this->stream);
@@ -156,9 +148,7 @@ class Socket extends CommonSocket
     }
 
     /**
-     * Write to the socket.
-     *
-     * @throws Loop\InvalidWatcherError
+     * @param string|null $data
      */
     public function write(?string $data = null): void
     {
@@ -168,14 +158,6 @@ class Socket extends CommonSocket
 
         $bytesToWrite = strlen($this->writeBuffer);
         $bytesWritten = @fwrite($this->stream, $this->writeBuffer);
-
-        if ($bytesToWrite === $bytesWritten) {
-            Loop::disable($this->writeWatcherId);
-        } elseif ($bytesWritten >= 0) {
-            Loop::enable($this->writeWatcherId);
-        } elseif ($this->isSocketDead()) {
-            $this->reconnect();
-        }
 
         $this->writeBuffer = substr($this->writeBuffer, $bytesWritten);
     }

@@ -44,11 +44,12 @@ class Client implements InitInterface
 
     /**
      * @param array $recordSet
+     * @param callable|null $callback
      * @return array
      * @throws Exception
-     * @throws \rabbit\kafka\Exception\Protocol
+     * @throws Exception\Protocol
      */
-    public function send(array $recordSet): array
+    public function send(array $recordSet, ?callable $callback = null): void
     {
         /** @var ProducerConfig $config */
         $config = $this->broker->getConfig();
@@ -56,11 +57,10 @@ class Client implements InitInterface
         $timeout = $config->getTimeout();
         $compression = $config->getCompression();
         if (empty($recordSet)) {
-            return [];
+            return;
         }
 
         $sendData = $this->convertRecordSet($recordSet);
-        $result = [];
         foreach ($sendData as $brokerId => $topicList) {
             $connect = $this->broker->getPoolConnect();
             $params = [
@@ -72,27 +72,21 @@ class Client implements InitInterface
 
             $this->logger->debug('Send message start, params:' . json_encode($params));
             $requestData = ProtocolTool::encode(ProtocolTool::PRODUCE_REQUEST, $params);
-            if ($requiredAck !== 0) {
-                $group = waitGroup();
-                $group->add(null, function () use ($connect, $requestData) {
+            rgo(function () use ($connect, $requestData, $requiredAck, $callback) {
+                if ($requiredAck !== 0) {
                     $connect->send($requestData);
                     $dataLen = Protocol::unpack(Protocol::BIT_B32, $connect->recv(4));
                     $recordSet = $connect->recv($dataLen);
                     $connect->release();
                     $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($recordSet, 0, 4));
-                    return ProtocolTool::decode(ProtocolTool::PRODUCE_REQUEST,
-                        substr($recordSet, 4));
-                });
-                $result = $group->wait($timeout / 1000);
-            } else {
-                rgo(function () use ($connect, $requestData) {
+                    $callback(ProtocolTool::decode(ProtocolTool::PRODUCE_REQUEST,
+                        substr($recordSet, 4)));
+                } else {
                     $connect->send($requestData);
                     $connect->release();
-                });
-            }
+                }
+            });
         }
-
-        return $result;
     }
 
     public function syncMeta(): void

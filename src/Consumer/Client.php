@@ -4,10 +4,8 @@
 namespace rabbit\kafka\Consumer;
 
 
-use Amp\Loop;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
-use rabbit\kafka\Amp;
 
 /**
  * Class Consumer
@@ -25,12 +23,12 @@ class Client
      * Consumer constructor.
      * @param Process $process
      */
-    public function __construct(Process $process, LoggerInterface $logger, ?StopStrategy $stopStrategy = null)
-    {
+    public function __construct(
+        Process $process,
+        LoggerInterface $logger
+    ) {
         $this->process = $process;
         $this->logger = $logger;
-        $this->stopStrategy = $stopStrategy;
-        Loop::set(getDI(Amp::class));
     }
 
 
@@ -44,17 +42,7 @@ class Client
             return;
         }
         $this->process->start($function);
-        Loop::run();
         $this->running = true;
-    }
-
-    private function setupStopStrategy(): void
-    {
-        if ($this->stopStrategy === null) {
-            return;
-        }
-
-        $this->stopStrategy->setup($this);
     }
 
     public function stop(): void
@@ -66,6 +54,5 @@ class Client
         $this->process->stop();
         $this->process = null;
         $this->running = false;
-        Loop::stop();
     }
 }

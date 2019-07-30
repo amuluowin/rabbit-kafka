@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace rabbit\kafka\Consumer;
 
-use Amp\Loop;
 use Psr\Log\LoggerAwareTrait;
 use function microtime;
 
@@ -85,16 +84,14 @@ class State
 
             $interval = $option['interval'] ?? 200;
 
-            Loop::repeat(
-                (int) $interval,
-                function (string $watcherId) use ($request, $option): void {
+            \Swoole\Timer::tick((int)$interval,
+                function (int $watcherId) use ($request, $option): void {
                     if ($this->checkRun($request) && $option['func'] !== null) {
                         $this->processing($request, $option['func']());
                     }
 
                     $this->requests[$request]['watcher'] = $watcherId;
-                }
-            );
+                });
         }
 
         // start sync metadata
@@ -108,17 +105,17 @@ class State
         $this->removeWatchers();
 
         $this->callStatus = [];
-        $this->requests   = self::CLEAN_REQUEST_STATE;
+        $this->requests = self::CLEAN_REQUEST_STATE;
     }
 
     private function removeWatchers(): void
     {
         foreach (array_keys($this->requests) as $request) {
-            if (! isset($this->requests[$request]['watcher'])) {
+            if (!isset($this->requests[$request]['watcher'])) {
                 return;
             }
 
-            Loop::cancel($this->requests[$request]['watcher']);
+            \Swoole\Timer::clear($this->requests[$request]['watcher']);
         }
     }
 
@@ -127,14 +124,14 @@ class State
      */
     public function succRun(int $key, $context = null): void
     {
-        if (! isset($this->callStatus[$key])) {
+        if (!isset($this->callStatus[$key])) {
             return;
         }
 
         switch ($key) {
             case self::REQUEST_METADATA:
                 $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
-                if ((bool) $context === true) { // if kafka broker is change
+                if ((bool)$context === true) { // if kafka broker is change
                     $this->recover();
                 }
                 break;
@@ -149,7 +146,7 @@ class State
                 $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
                 break;
             case self::REQUEST_OFFSET:
-                if (! isset($this->callStatus[$key]['context'])) {
+                if (!isset($this->callStatus[$key]['context'])) {
                     $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
                     break;
                 }
@@ -160,7 +157,7 @@ class State
                 }
                 break;
             case self::REQUEST_FETCH:
-                if (! isset($this->callStatus[$key]['context'])) {
+                if (!isset($this->callStatus[$key]['context'])) {
                     $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
                     break;
                 }
@@ -179,7 +176,7 @@ class State
      */
     public function failRun(int $key, $context = null): void
     {
-        if (! isset($this->callStatus[$key])) {
+        if (!isset($this->callStatus[$key])) {
             return;
         }
 
@@ -214,14 +211,14 @@ class State
         }
 
         $this->callStatus = [
-            self::REQUEST_METADATA      => $this->callStatus[self::REQUEST_METADATA],
-            self::REQUEST_GETGROUP      => $this->callStatus[self::REQUEST_GETGROUP],
-            self::REQUEST_JOINGROUP     => ['status' => self::STATUS_START],
-            self::REQUEST_SYNCGROUP     => ['status' => self::STATUS_START],
-            self::REQUEST_HEARTGROUP    => ['status' => self::STATUS_LOOP],
-            self::REQUEST_OFFSET        => ['status' => self::STATUS_LOOP],
-            self::REQUEST_FETCH         => ['status' => self::STATUS_LOOP],
-            self::REQUEST_FETCH_OFFSET  => ['status' => self::STATUS_LOOP],
+            self::REQUEST_METADATA => $this->callStatus[self::REQUEST_METADATA],
+            self::REQUEST_GETGROUP => $this->callStatus[self::REQUEST_GETGROUP],
+            self::REQUEST_JOINGROUP => ['status' => self::STATUS_START],
+            self::REQUEST_SYNCGROUP => ['status' => self::STATUS_START],
+            self::REQUEST_HEARTGROUP => ['status' => self::STATUS_LOOP],
+            self::REQUEST_OFFSET => ['status' => self::STATUS_LOOP],
+            self::REQUEST_FETCH => ['status' => self::STATUS_LOOP],
+            self::REQUEST_FETCH_OFFSET => ['status' => self::STATUS_LOOP],
             self::REQUEST_COMMIT_OFFSET => ['status' => self::STATUS_LOOP],
         ];
     }
@@ -229,21 +226,21 @@ class State
     public function recover(): void
     {
         $this->callStatus = [
-            self::REQUEST_METADATA      => $this->callStatus[self::REQUEST_METADATA],
-            self::REQUEST_GETGROUP      => ['status' => self::STATUS_START],
-            self::REQUEST_JOINGROUP     => ['status' => self::STATUS_START],
-            self::REQUEST_SYNCGROUP     => ['status' => self::STATUS_START],
-            self::REQUEST_HEARTGROUP    => ['status' => self::STATUS_LOOP],
-            self::REQUEST_OFFSET        => ['status' => self::STATUS_LOOP],
-            self::REQUEST_FETCH         => ['status' => self::STATUS_LOOP],
-            self::REQUEST_FETCH_OFFSET  => ['status' => self::STATUS_LOOP],
+            self::REQUEST_METADATA => $this->callStatus[self::REQUEST_METADATA],
+            self::REQUEST_GETGROUP => ['status' => self::STATUS_START],
+            self::REQUEST_JOINGROUP => ['status' => self::STATUS_START],
+            self::REQUEST_SYNCGROUP => ['status' => self::STATUS_START],
+            self::REQUEST_HEARTGROUP => ['status' => self::STATUS_LOOP],
+            self::REQUEST_OFFSET => ['status' => self::STATUS_LOOP],
+            self::REQUEST_FETCH => ['status' => self::STATUS_LOOP],
+            self::REQUEST_FETCH_OFFSET => ['status' => self::STATUS_LOOP],
             self::REQUEST_COMMIT_OFFSET => ['status' => self::STATUS_LOOP],
         ];
     }
 
     protected function checkRun(int $key): bool
     {
-        if (! isset($this->callStatus[$key])) {
+        if (!isset($this->callStatus[$key])) {
             return false;
         }
 
@@ -349,7 +346,7 @@ class State
      */
     protected function processing(int $key, $context): void
     {
-        if (! isset($this->callStatus[$key])) {
+        if (!isset($this->callStatus[$key])) {
             return;
         }
 
