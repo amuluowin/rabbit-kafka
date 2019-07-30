@@ -10,6 +10,7 @@ use Psr\Log\LoggerInterface;
 use rabbit\contract\InitInterface;
 use rabbit\kafka\Broker;
 use rabbit\kafka\Exception;
+use rabbit\kafka\Protocol as ProtocolTool;
 use rabbit\kafka\Protocol\Protocol;
 
 class Client implements InitInterface
@@ -33,7 +34,7 @@ class Client implements InitInterface
         $this->broker = $broker;
         $this->logger = $logger;
         $this->recordValidator = $recordValidator;
-        \rabbit\kafka\Protocol::init($broker->getConfig()->getBrokerVersion(), $logger);
+        ProtocolTool::init($broker->getConfig()->getBrokerVersion(), $logger);
     }
 
     public function init()
@@ -61,7 +62,7 @@ class Client implements InitInterface
         $sendData = $this->convertRecordSet($recordSet);
         $result = [];
         foreach ($sendData as $brokerId => $topicList) {
-            $connect = $this->broker->getConnect();
+            $connect = $this->broker->getPoolConnect();
             $params = [
                 'required_ack' => $requiredAck,
                 'timeout' => $timeout,
@@ -70,21 +71,23 @@ class Client implements InitInterface
             ];
 
             $this->logger->debug('Send message start, params:' . json_encode($params));
-            $requestData = \rabbit\kafka\Protocol::encode(\rabbit\kafka\Protocol::PRODUCE_REQUEST, $params);
+            $requestData = ProtocolTool::encode(ProtocolTool::PRODUCE_REQUEST, $params);
             if ($requiredAck !== 0) {
                 $group = waitGroup();
                 $group->add(null, function () use ($connect, $requestData) {
                     $connect->send($requestData);
                     $dataLen = Protocol::unpack(Protocol::BIT_B32, $connect->recv(4));
                     $recordSet = $connect->recv($dataLen);
+                    $connect->release();
                     $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($recordSet, 0, 4));
-                    return \rabbit\kafka\Protocol::decode(\rabbit\kafka\Protocol::PRODUCE_REQUEST,
+                    return ProtocolTool::decode(ProtocolTool::PRODUCE_REQUEST,
                         substr($recordSet, 4));
                 });
                 $result = $group->wait($timeout / 1000);
             } else {
                 rgo(function () use ($connect, $requestData) {
                     $connect->send($requestData);
+                    $connect->release();
                 });
             }
         }
@@ -95,14 +98,15 @@ class Client implements InitInterface
     public function syncMeta(): void
     {
         $this->logger->debug('Start sync metadata request');
-        $socket = $this->broker->getConnect();
+        $socket = $this->broker->getPoolConnect();
         $params = [];
-        $requestData = \rabbit\kafka\Protocol::encode(\rabbit\kafka\Protocol::METADATA_REQUEST, $params);
+        $requestData = ProtocolTool::encode(ProtocolTool::METADATA_REQUEST, $params);
         $socket->send($requestData);
         $dataLen = Protocol::unpack(Protocol::BIT_B32, $socket->recv(4));
         $data = $socket->recv($dataLen);
+        $socket->release();
         $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($data, 0, 4));
-        $result = \rabbit\kafka\Protocol::decode(\rabbit\kafka\Protocol::METADATA_REQUEST, substr($data, 4));
+        $result = ProtocolTool::decode(ProtocolTool::METADATA_REQUEST, substr($data, 4));
 
         if (!isset($result['brokers'], $result['topics'])) {
             throw new Exception('Get metadata is fail, brokers or topics is null.');

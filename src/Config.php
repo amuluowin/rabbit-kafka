@@ -16,7 +16,7 @@ use function version_compare;
 /**
  * @method string getClientId()
  * @method string getBrokerVersion()
- * @method string getMetadataBrokerList()
+ * @method array getMetadataBrokerList()
  * @method int getMessageMaxBytes()
  * @method int getMetadataRequestTimeoutMs()
  * @method int getMetadataRefreshIntervalMs()

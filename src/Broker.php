@@ -13,7 +13,7 @@ use rabbit\kafka\Sasl\Gssapi;
 use rabbit\kafka\Sasl\Plain;
 use rabbit\kafka\Sasl\Scram;
 use rabbit\socket\pool\SocketPool;
-use rabbit\socket\socket\SocketClientInterface;
+use rabbit\socket\socket\AbstractSocketConnection;
 use function in_array;
 use function sprintf;
 
@@ -24,35 +24,65 @@ class Broker
      * @var int
      */
     private $groupBrokerId;
+
     /**
      * @var mixed[][]
      */
     private $topics = [];
+
     /**
      * @var string[]
      */
     private $brokers = [];
-    /** @var Config */
+
+    /**
+     * @var CommonSocket[]
+     */
+    private $metaSockets = [];
+
+    /**
+     * @var CommonSocket[]
+     */
+    private $dataSockets = [];
+
+    /**
+     * @var callable|null
+     */
+    private $process;
+
+    /**
+     * @var Config|null
+     */
     private $config;
-    /** @var SocketPool */
+    /** @var SocketPool|null */
     private $pool;
 
     /**
      * Broker constructor.
      * @param Config $config
      */
-    public function __construct(SocketPool $pool, Config $config)
+    public function __construct(Config $config, ?SocketPool $pool = null)
     {
         $this->pool = $pool;
         $this->config = $config;
     }
 
     /**
-     * @return Config
+     * @return AbstractSocketConnection
      */
+    public function getPoolConnect(): AbstractSocketConnection
+    {
+        return $this->pool->getConnection();
+    }
+
     public function getConfig(): Config
     {
         return $this->config;
+    }
+
+    public function setProcess(callable $process): void
+    {
+        $this->process = $process;
     }
 
     public function setConfig(Config $config): void
@@ -60,41 +90,33 @@ class Broker
         $this->config = $config;
     }
 
-    public function getGroupBrokerId(): int
-    {
-        return $this->groupBrokerId;
-    }
-
     public function setGroupBrokerId(int $brokerId): void
     {
         $this->groupBrokerId = $brokerId;
     }
 
-    /**
-     * @return SocketPool
-     */
-    public function getPool(): SocketPool
+    public function getGroupBrokerId(): int
     {
-        return $this->pool;
+        return $this->groupBrokerId;
     }
 
     /**
-     * @param array $topics
-     * @param array $brokersResult
-     * @return bool
+     * @param mixed[][] $topics
+     * @param mixed[] $brokersResult
      */
     public function setData(array $topics, array $brokersResult): bool
     {
         $brokers = [];
 
         foreach ($brokersResult as $value) {
-            $brokers[] = $value['host'] . ':' . $value['port'];
+            $brokers[$value['nodeId']] = $value['host'] . ':' . $value['port'];
         }
 
         $changed = false;
 
         if (serialize($this->brokers) !== serialize($brokers)) {
-            $this->pool->getPoolConfig()->setUri($brokers);
+            $this->brokers = $brokers;
+
             $changed = true;
         }
 
@@ -136,24 +158,101 @@ class Broker
      */
     public function getBrokers(): array
     {
-        return $this->pool->getPoolConfig()->getUri();
+        return $this->brokers;
     }
 
-    /**
-     * @return SocketClientInterface
-     * @throws Exception
-     */
-    public function getConnect(): SocketClientInterface
+    public function getMetaConnect(string $key): ?CommonSocket
     {
-        $connection = $this->pool->getConnection();
-        if (($sasl = $this->judgeConnectionConfig()) !== null) {
-            $sasl->authenticate($connection);
+        return $this->getConnect($key, 'metaSockets');
+    }
+
+    public function getRandConnect(bool $modeSync = false): ?CommonSocket
+    {
+        $nodeIds = array_keys($this->brokers);
+        shuffle($nodeIds);
+
+        if (!isset($nodeIds[0])) {
+            return null;
         }
-        return $connection;
+
+        return $this->getMetaConnect((string)$nodeIds[0]);
+    }
+
+    public function getDataConnect(string $key): ?CommonSocket
+    {
+        return $this->getConnect($key, 'dataSockets');
+    }
+
+    public function getConnect(string $key, string $type): ?CommonSocket
+    {
+        if (isset($this->{$type}[$key])) {
+            return $this->{$type}[$key];
+        }
+
+        if (isset($this->brokers[$key])) {
+            $hostname = $this->brokers[$key];
+            if (isset($this->{$type}[$hostname])) {
+                return $this->{$type}[$hostname];
+            }
+        }
+
+        $host = null;
+        $port = null;
+
+        if (isset($this->brokers[$key])) {
+            $hostname = $this->brokers[$key];
+
+            [$host, $port] = explode(':', $hostname);
+        }
+
+        if (strpos($key, ':') !== false) {
+            [$host, $port] = explode(':', $key);
+        }
+
+        if ($host === null || $port === null) {
+            return null;
+        }
+
+        try {
+            $socket = $this->getSocket((string)$host, (int)$port);
+
+            if ($socket instanceof Socket && $this->process !== null) {
+                $socket->setOnReadable($this->process);
+            }
+
+            $socket->connect();
+            $this->{$type}[$key] = $socket;
+
+            return $socket;
+        } catch (\Throwable $e) {
+            $this->logger->error($e->getMessage());
+            return null;
+        }
+    }
+
+    public function clear(): void
+    {
+        foreach ($this->metaSockets as $key => $socket) {
+            $socket->close();
+        }
+        foreach ($this->dataSockets as $key => $socket) {
+            $socket->close();
+        }
+        $this->brokers = [];
     }
 
     /**
-     * @throws Exception
+     * @throws \Kafka\Exception
+     */
+    public function getSocket(string $host, int $port): CommonSocket
+    {
+        $saslProvider = $this->judgeConnectionConfig();
+        return new Socket($host, $port, $this->config, $saslProvider);
+    }
+
+
+    /**
+     * @throws \Kafka\Exception
      */
     private function judgeConnectionConfig(): ?SaslMechanism
     {
@@ -183,7 +282,7 @@ class Broker
     }
 
     /**
-     * @throws Exception
+     * @throws \Kafka\Exception
      */
     private function getSaslMechanismProvider(Config $config): SaslMechanism
     {
