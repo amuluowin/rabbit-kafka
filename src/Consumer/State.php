@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace rabbit\kafka\Consumer;
 
 use Psr\Log\LoggerAwareTrait;
+use rabbit\core\Loop;
 use function microtime;
 
 class State
@@ -84,14 +85,15 @@ class State
 
             $interval = $option['interval'] ?? 200;
 
-            \Swoole\Timer::tick((int)$interval,
+            Loop::addTimer('kafka', [
+                (int)$interval,
                 function (int $watcherId) use ($request, $option): void {
                     if ($this->checkRun($request) && $option['func'] !== null) {
                         $this->processing($request, $option['func']());
                     }
+                }
+            ]);
 
-                    $this->requests[$request]['watcher'] = $watcherId;
-                });
         }
 
         // start sync metadata
@@ -102,21 +104,8 @@ class State
 
     public function stop(): void
     {
-        $this->removeWatchers();
-
         $this->callStatus = [];
         $this->requests = self::CLEAN_REQUEST_STATE;
-    }
-
-    private function removeWatchers(): void
-    {
-        foreach (array_keys($this->requests) as $request) {
-            if (!isset($this->requests[$request]['watcher'])) {
-                return;
-            }
-
-            \Swoole\Timer::clear($this->requests[$request]['watcher']);
-        }
     }
 
     /**

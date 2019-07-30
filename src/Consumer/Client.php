@@ -6,6 +6,7 @@ namespace rabbit\kafka\Consumer;
 
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
+use rabbit\core\Loop;
 
 /**
  * Class Consumer
@@ -41,6 +42,7 @@ class Client
             $this->logger->error('Consumer is already being executed');
             return;
         }
+        Loop::run('kafka');
         $this->process->start($function);
         $this->running = true;
     }
@@ -53,6 +55,7 @@ class Client
         }
         $this->process->stop();
         $this->process = null;
+        Loop::stop('kafka');
         $this->running = false;
     }
 }

@@ -45,13 +45,12 @@ class Client implements InitInterface
     /**
      * @param array $recordSet
      * @param callable|null $callback
-     * @return array
      * @throws Exception
      * @throws Exception\Protocol
      */
     public function send(array $recordSet, ?callable $callback = null): void
     {
-        /** @var ProducerConfig $config */
+        /** @var ProducterConfig $config */
         $config = $this->broker->getConfig();
         $requiredAck = $config->getRequiredAck();
         $timeout = $config->getTimeout();

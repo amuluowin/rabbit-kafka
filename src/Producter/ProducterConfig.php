@@ -31,7 +31,6 @@ class ProducterConfig extends Config
         'requiredAck' => 1,
         'timeout' => 5000,
         'requestTimeout' => 6000,
-        'produceInterval' => 100,
         'compression' => Protocol::COMPRESSION_NONE,
     ];
 
@@ -44,19 +43,7 @@ class ProducterConfig extends Config
             throw new Exception\Config('Set request timeout value is invalid, must set it 1 .. 900000');
         }
 
-        static::$options['requestTimeout'] = $requestTimeout;
-    }
-
-    /**
-     * @throws \rabbit\kafka\Exception\Config
-     */
-    public function setProduceInterval(int $produceInterval): void
-    {
-        if ($produceInterval < 1 || $produceInterval > 900000) {
-            throw new Exception\Config('Set produce interval timeout value is invalid, must set it 1 .. 900000');
-        }
-
-        static::$options['produceInterval'] = $produceInterval;
+        $this->options['requestTimeout'] = $requestTimeout;
     }
 
     /**
@@ -68,7 +55,7 @@ class ProducterConfig extends Config
             throw new Exception\Config('Set timeout value is invalid, must set it 1 .. 900000');
         }
 
-        static::$options['timeout'] = $timeout;
+        $this->options['timeout'] = $timeout;
     }
 
     /**
@@ -80,12 +67,7 @@ class ProducterConfig extends Config
             throw new Exception\Config('Set required ack value is invalid, must set it -1 .. 1000');
         }
 
-        static::$options['requiredAck'] = $requiredAck;
-    }
-
-    public function setIsAsyn(bool $asyn): void
-    {
-        static::$options['isAsyn'] = $asyn;
+        $this->options['requiredAck'] = $requiredAck;
     }
 
     public function setCompression(int $compression): void
@@ -94,6 +76,6 @@ class ProducterConfig extends Config
             throw new Exception\Config('Compression must be one the \rabbit\kafka\Protocol\Produce::COMPRESSION_* constants');
         }
 
-        static::$options['compression'] = $compression;
+        $this->options['compression'] = $compression;
     }
 }

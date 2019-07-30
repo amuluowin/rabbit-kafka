@@ -68,7 +68,7 @@ abstract class Config
     /**
      * @var mixed[]
      */
-    protected static $options = [];
+    protected $options = [];
 
     /**
      * @var mixed[]
@@ -113,8 +113,8 @@ abstract class Config
         $option = lcfirst(substr($name, 3));
 
         if ($isGetter) {
-            if (isset(self::$options[$option])) {
-                return self::$options[$option];
+            if (isset($this->options[$option])) {
+                return $this->options[$option];
             }
 
             if (isset(self::$defaults[$option])) {
@@ -132,7 +132,7 @@ abstract class Config
             return false;
         }
 
-        static::$options[$option] = array_shift($args);
+        $this->options[$option] = array_shift($args);
 
         // check todo
         return true;
@@ -149,7 +149,7 @@ abstract class Config
             throw new Exception\Config('Set clientId value is invalid, must is not empty string.');
         }
 
-        static::$options['clientId'] = $client;
+        $this->options['clientId'] = $client;
     }
 
     /**
@@ -163,12 +163,12 @@ abstract class Config
             throw new Exception\Config('Set broker version value is invalid, must is not empty string and gt 0.8.0.');
         }
 
-        static::$options['brokerVersion'] = $version;
+        $this->options['brokerVersion'] = $version;
     }
 
     public function clear(): void
     {
-        static::$options = [];
+        $this->options = [];
     }
 
     /**
@@ -179,7 +179,7 @@ abstract class Config
         if ($messageMaxBytes < 1000 || $messageMaxBytes > 1000000000) {
             throw new Exception\Config('Set message max bytes value is invalid, must set it 1000 .. 1000000000');
         }
-        static::$options['messageMaxBytes'] = $messageMaxBytes;
+        $this->options['messageMaxBytes'] = $messageMaxBytes;
     }
 
     /**
@@ -190,7 +190,7 @@ abstract class Config
         if ($metadataRequestTimeoutMs < 10 || $metadataRequestTimeoutMs > 900000) {
             throw new Exception\Config('Set metadata request timeout value is invalid, must set it 10 .. 900000');
         }
-        static::$options['metadataRequestTimeoutMs'] = $metadataRequestTimeoutMs;
+        $this->options['metadataRequestTimeoutMs'] = $metadataRequestTimeoutMs;
     }
 
     /**
@@ -201,7 +201,7 @@ abstract class Config
         if ($metadataRefreshIntervalMs < 10 || $metadataRefreshIntervalMs > 3600000) {
             throw new Exception\Config('Set metadata refresh interval value is invalid, must set it 10 .. 3600000');
         }
-        static::$options['metadataRefreshIntervalMs'] = $metadataRefreshIntervalMs;
+        $this->options['metadataRefreshIntervalMs'] = $metadataRefreshIntervalMs;
     }
 
     /**
@@ -212,7 +212,7 @@ abstract class Config
         if ($metadataMaxAgeMs < 1 || $metadataMaxAgeMs > 86400000) {
             throw new Exception\Config('Set metadata max age value is invalid, must set it 1 .. 86400000');
         }
-        static::$options['metadataMaxAgeMs'] = $metadataMaxAgeMs;
+        $this->options['metadataMaxAgeMs'] = $metadataMaxAgeMs;
     }
 
     /**
@@ -224,7 +224,7 @@ abstract class Config
             throw new Exception\Config('Set ssl local cert file is invalid');
         }
 
-        static::$options['sslLocalCert'] = $localCert;
+        $this->options['sslLocalCert'] = $localCert;
     }
 
     /**
@@ -236,7 +236,7 @@ abstract class Config
             throw new Exception\Config('Set ssl local private key file is invalid');
         }
 
-        static::$options['sslLocalPk'] = $localPk;
+        $this->options['sslLocalPk'] = $localPk;
     }
 
     /**
@@ -248,7 +248,7 @@ abstract class Config
             throw new Exception\Config('Set ssl ca file is invalid');
         }
 
-        static::$options['sslCafile'] = $cafile;
+        $this->options['sslCafile'] = $cafile;
     }
 
     /**
@@ -260,7 +260,7 @@ abstract class Config
             throw new Exception\Config('Set sasl gssapi keytab file is invalid');
         }
 
-        static::$options['saslKeytab'] = $keytab;
+        $this->options['saslKeytab'] = $keytab;
     }
 
     /**
@@ -272,7 +272,7 @@ abstract class Config
             throw new Exception\Config('Invalid security protocol given.');
         }
 
-        static::$options['securityProtocol'] = $protocol;
+        $this->options['securityProtocol'] = $protocol;
     }
 
     /**
@@ -284,6 +284,6 @@ abstract class Config
             throw new Exception\Config('Invalid security sasl mechanism given.');
         }
 
-        static::$options['saslMechanism'] = $mechanism;
+        $this->options['saslMechanism'] = $mechanism;
     }
 }

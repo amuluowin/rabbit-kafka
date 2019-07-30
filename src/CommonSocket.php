@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace rabbit\kafka;
 
-use const STREAM_CLIENT_CONNECT;
+use Psr\Log\LoggerAwareTrait;
 use function feof;
 use function fread;
 use function fwrite;
@@ -16,6 +16,7 @@ use function stream_socket_client;
 use function strlen;
 use function substr;
 use function trim;
+use const STREAM_CLIENT_CONNECT;
 
 /**
  * Class CommonSocket
@@ -23,6 +24,8 @@ use function trim;
  */
 abstract class CommonSocket
 {
+    use LoggerAwareTrait;
+
     public const READ_MAX_LENGTH = 5242880; // read socket max length 5MB
 
     /**
@@ -93,9 +96,9 @@ abstract class CommonSocket
 
     public function __construct(string $host, int $port, ?Config $config = null, ?SaslMechanism $saslProvider = null)
     {
-        $this->host         = $host;
-        $this->port         = $port;
-        $this->config       = $config;
+        $this->host = $host;
+        $this->port = $port;
+        $this->config = $config;
         $this->saslProvider = $saslProvider;
     }
 
@@ -138,7 +141,7 @@ abstract class CommonSocket
         }
 
         $remoteSocket = sprintf('tcp://%s:%s', $this->host, $this->port);
-        $context      = stream_context_create([]);
+        $context = stream_context_create([]);
 
         if ($this->config !== null && $this->config->getSslEnable()) { // ssl connection
             $remoteSocket = sprintf('ssl://%s:%s', $this->host, $this->port);
@@ -146,12 +149,12 @@ abstract class CommonSocket
             $context = stream_context_create(
                 [
                     'ssl' => [
-                        'local_cert'  => $this->config->getSslLocalCert(),
-                        'local_pk'    => $this->config->getSslLocalPk(),
+                        'local_cert' => $this->config->getSslLocalCert(),
+                        'local_pk' => $this->config->getSslLocalPk(),
                         'verify_peer' => $this->config->getSslVerifyPeer(),
-                        'passphrase'  => $this->config->getSslPassphrase(),
-                        'cafile'      => $this->config->getSslCafile(),
-                        'peer_name'   => $this->config->getSslPeerName(),
+                        'passphrase' => $this->config->getSslPassphrase(),
+                        'cafile' => $this->config->getSslCafile(),
+                        'peer_name' => $this->config->getSslPeerName(),
                     ],
                 ]
             );
@@ -159,7 +162,7 @@ abstract class CommonSocket
 
         $this->stream = $this->createSocket($remoteSocket, $context, $errno, $errstr);
 
-        if (! is_resource($this->stream)) {
+        if (!is_resource($this->stream)) {
             throw new Exception(
                 sprintf('Could not connect to %s:%d (%s [%d])', $this->host, $this->port, $errstr, $errno)
             );
@@ -263,7 +266,7 @@ abstract class CommonSocket
             $res = $this->getMetaData();
             $this->close();
 
-            if (! empty($res['timed_out'])) {
+            if (!empty($res['timed_out'])) {
                 throw Exception\Socket::timedOut($length);
             }
 
@@ -271,7 +274,7 @@ abstract class CommonSocket
         }
 
         $remainingBytes = $length;
-        $data           = $chunk = '';
+        $data = $chunk = '';
 
         while ($remainingBytes > 0) {
             $chunk = fread($this->stream, $remainingBytes);
@@ -291,7 +294,7 @@ abstract class CommonSocket
                 continue; // attempt another read
             }
 
-            $data           .= $chunk;
+            $data .= $chunk;
             $remainingBytes -= strlen($chunk);
         }
 
@@ -308,7 +311,7 @@ abstract class CommonSocket
         // fwrite to a socket may be partial, so loop until we
         // are done with the entire buffer
         $failedAttempts = 0;
-        $bytesWritten   = 0;
+        $bytesWritten = 0;
 
         $bytesToWrite = strlen($buffer);
 
@@ -322,7 +325,7 @@ abstract class CommonSocket
 
             if ($writable === 0) {
                 $res = $this->getMetaData();
-                if (! empty($res['timed_out'])) {
+                if (!empty($res['timed_out'])) {
                     throw new Exception('Timed out writing ' . $bytesToWrite . ' bytes to stream after writing ' . $bytesWritten . ' bytes');
                 }
 

@@ -3,11 +3,11 @@ declare(strict_types=1);
 
 namespace rabbit\kafka;
 
+use rabbit\core\Loop;
 use rabbit\kafka\Protocol\Protocol;
 use function fclose;
 use function feof;
 use function fread;
-use function fwrite;
 use function is_resource;
 use function stream_set_blocking;
 use function stream_set_read_buffer;
@@ -61,31 +61,27 @@ class Socket extends CommonSocket
         stream_set_blocking($this->stream, false);
         stream_set_read_buffer($this->stream, 0);
 
-        swoole_event_add(
+        Loop::addEvent('kafka', [
             $this->stream,
             function (): void {
-                if ($this->isSocketDead()) {
-                    $this->reconnect();
-                    return;
-                }
-
+                $this->logger->debug("fd=" . (int)$this->stream . ' can read!', ['module' => 'Kafka']);
                 $newData = @fread($this->stream, self::READ_MAX_LENGTH);
 
                 if ($newData) {
                     $this->read($newData);
                 }
             },
-            function (): void {
-                $this->write();
-            },
-            SWOOLE_EVENT_READ | SWOOLE_EVENT_WRITE
-        );
+            null,
+            SWOOLE_EVENT_READ
+        ]);
     }
 
     public function reconnect(): void
     {
+        $this->logger->warning("fd=" . (int)$this->stream . ' is dead!', ['module' => 'Kafka']);
         $this->close();
         $this->connect();
+        $this->logger->info("fd=" . (int)$this->stream . ' reconnected!', ['module' => 'Kafka']);
     }
 
     public function setOnReadable(callable $read): void
@@ -95,20 +91,11 @@ class Socket extends CommonSocket
 
     public function close(): void
     {
-        swoole_event_del($this->stream);
-
-        if (is_resource($this->stream)) {
-            fclose($this->stream);
-        }
+        Loop::stopEvent('kafka', (int)$this->stream);
 
         $this->readBuffer = '';
         $this->writeBuffer = '';
         $this->readNeedLength = 0;
-    }
-
-    public function isResource(): bool
-    {
-        return is_resource($this->stream);
     }
 
     /**
@@ -156,10 +143,15 @@ class Socket extends CommonSocket
             $this->writeBuffer .= $data;
         }
 
-        $bytesToWrite = strlen($this->writeBuffer);
-        $bytesWritten = @fwrite($this->stream, $this->writeBuffer);
+        do {
+            $bytesToWrite = strlen($this->writeBuffer);
+            $bytesWritten = \Co::fwrite($this->stream, $this->writeBuffer);
 
-        $this->writeBuffer = substr($this->writeBuffer, $bytesWritten);
+            if ($this->isSocketDead()) {
+                $this->reconnect();
+            }
+            $this->writeBuffer = substr($this->writeBuffer, $bytesWritten);
+        } while (strlen($this->writeBuffer));
     }
 
     /**

@@ -56,6 +56,8 @@ class Broker
     private $config;
     /** @var SocketPool|null */
     private $pool;
+    /** @var int */
+    private $socketSize = 3;
 
     /**
      * Broker constructor.
@@ -185,14 +187,14 @@ class Broker
 
     public function getConnect(string $key, string $type): ?CommonSocket
     {
-        if (isset($this->{$type}[$key])) {
-            return $this->{$type}[$key];
+        if (isset($this->{$type}[$key]) && count($this->{$type}[$key]) >= $this->socketSize) {
+            return $this->{$type}[$key][array_rand($this->{$type}[$key])];
         }
 
         if (isset($this->brokers[$key])) {
             $hostname = $this->brokers[$key];
-            if (isset($this->{$type}[$hostname])) {
-                return $this->{$type}[$hostname];
+            if (isset($this->{$type}[$hostname]) && count($this->{$type}[$hostname]) >= $this->socketSize) {
+                return $this->{$type}[$hostname][array_rand($this->{$type}[$hostname])];
             }
         }
 
@@ -219,9 +221,9 @@ class Broker
             if ($socket instanceof Socket && $this->process !== null) {
                 $socket->setOnReadable($this->process);
             }
-
+            $socket->setLogger($this->logger);
             $socket->connect();
-            $this->{$type}[$key] = $socket;
+            $this->{$type}[$key][] = $socket;
 
             return $socket;
         } catch (\Throwable $e) {
