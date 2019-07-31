@@ -5,7 +5,6 @@ namespace rabbit\kafka;
 
 use rabbit\core\Loop;
 use rabbit\kafka\Protocol\Protocol;
-use function fclose;
 use function feof;
 use function fread;
 use function is_resource;
@@ -20,16 +19,6 @@ use function substr;
  */
 class Socket extends CommonSocket
 {
-    /**
-     * @var string
-     */
-    private $readWatcherId = '';
-
-    /**
-     * @var string
-     */
-    private $writeWatcherId = '';
-
     /**
      * @var string
      */
@@ -91,7 +80,7 @@ class Socket extends CommonSocket
 
     public function close(): void
     {
-        Loop::stopEvent('kafka', (int)$this->stream);
+        Loop::stopEvent('kafka', (int)$this->stream, true);
 
         $this->readBuffer = '';
         $this->writeBuffer = '';
