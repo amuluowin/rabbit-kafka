@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace rabbit\kafka\Producter;
 
-use rabbit\Exception;
+use rabbit\kafka\Exception;
 use function is_string;
 use function trim;
 
