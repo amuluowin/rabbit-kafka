@@ -78,7 +78,7 @@ class Client implements InitInterface
                     $recordSet = $connect->recv($dataLen);
                     $connect->release();
                     $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($recordSet, 0, 4));
-                    $callback(ProtocolTool::decode(ProtocolTool::PRODUCE_REQUEST,
+                    $callback && $callback(ProtocolTool::decode(ProtocolTool::PRODUCE_REQUEST,
                         substr($recordSet, 4)));
                 } else {
                     $connect->send($requestData);
