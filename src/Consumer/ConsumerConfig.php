@@ -21,7 +21,7 @@ class ConsumerConfig extends Config
 {
     use LoggerAwareTrait;
 
-    public const CONSUME_AFTER_COMMIT_OFFSET  = 1;
+    public const CONSUME_AFTER_COMMIT_OFFSET = 1;
     public const CONSUME_BEFORE_COMMIT_OFFSET = 2;
 
     /**
@@ -35,13 +35,13 @@ class ConsumerConfig extends Config
      * @var mixed[]
      */
     protected static $defaults = [
-        'groupId'          => '',
-        'sessionTimeout'   => 30000,
+        'groupId' => '',
+        'sessionTimeout' => 30000,
         'rebalanceTimeout' => 30000,
-        'topics'           => [],
-        'offsetReset'      => 'latest', // earliest
-        'maxBytes'         => 65536, // 64kb
-        'maxWaitTime'      => 100,
+        'topics' => [],
+        'offsetReset' => 'latest', // earliest
+        'maxBytes' => 65536, // 64kb
+        'maxWaitTime' => 100,
     ];
 
     /**
@@ -52,7 +52,7 @@ class ConsumerConfig extends Config
         $groupId = trim($this->ietGroupId());
 
         if ($groupId === false || $groupId === '') {
-            throw new Exception\Config('Get group id value is invalid, must set it not empty string');
+            throw new \rabbit\kafka\Exception\Config('Get group id value is invalid, must set it not empty string');
         }
 
         return $groupId;
@@ -66,7 +66,7 @@ class ConsumerConfig extends Config
         $groupId = trim($groupId);
 
         if ($groupId === false || $groupId === '') {
-            throw new Exception\Config('Set group id value is invalid, must set it not empty string');
+            throw new \rabbit\kafka\Exception\Config('Set group id value is invalid, must set it not empty string');
         }
 
         $this->options['groupId'] = $groupId;
@@ -78,7 +78,7 @@ class ConsumerConfig extends Config
     public function setSessionTimeout(int $sessionTimeout): void
     {
         if ($sessionTimeout < 1 || $sessionTimeout > 3600000) {
-            throw new Exception\Config('Set session timeout value is invalid, must set it 1 .. 3600000');
+            throw new \rabbit\kafka\Exception\Config('Set session timeout value is invalid, must set it 1 .. 3600000');
         }
 
         $this->options['sessionTimeout'] = $sessionTimeout;
@@ -90,7 +90,7 @@ class ConsumerConfig extends Config
     public function setRebalanceTimeout(int $rebalanceTimeout): void
     {
         if ($rebalanceTimeout < 1 || $rebalanceTimeout > 3600000) {
-            throw new Exception\Config('Set rebalance timeout value is invalid, must set it 1 .. 3600000');
+            throw new \rabbit\kafka\Exception\Config('Set rebalance timeout value is invalid, must set it 1 .. 3600000');
         }
 
         $this->options['rebalanceTimeout'] = $rebalanceTimeout;
@@ -101,8 +101,8 @@ class ConsumerConfig extends Config
      */
     public function setOffsetReset(string $offsetReset): void
     {
-        if (! in_array($offsetReset, ['latest', 'earliest'], true)) {
-            throw new Exception\Config('Set offset reset value is invalid, must set it `latest` or `earliest`');
+        if (!in_array($offsetReset, ['latest', 'earliest'], true)) {
+            throw new \rabbit\kafka\Exception\Config('Set offset reset value is invalid, must set it `latest` or `earliest`');
         }
 
         $this->options['offsetReset'] = $offsetReset;
@@ -118,7 +118,7 @@ class ConsumerConfig extends Config
         $topics = $this->ietTopics();
 
         if (empty($topics)) {
-            throw new Exception\Config('Get consumer topics value is invalid, must set it not empty');
+            throw new \rabbit\kafka\Exception\Config('Get consumer topics value is invalid, must set it not empty');
         }
 
         return $topics;
@@ -129,19 +129,20 @@ class ConsumerConfig extends Config
      *
      * @throws \rabbit\kafka\Exception\Config
      */
-    public function setTopics(array $topics): void
+    public function setTopics(string $topics): void
     {
+        $topics = trim($topics);
         if (empty($topics)) {
-            throw new Exception\Config('Set consumer topics value is invalid, must set it not empty array');
+            throw new \rabbit\kafka\Exception\Config('Set consumer topics value is invalid, must set it not empty');
         }
-
+        $topics = explode(',', $topics);
         $this->options['topics'] = $topics;
     }
 
     public function setConsumeMode(int $mode): void
     {
-        if (! in_array($mode, [self::CONSUME_AFTER_COMMIT_OFFSET, self::CONSUME_BEFORE_COMMIT_OFFSET], true)) {
-            throw new Exception\Config(
+        if (!in_array($mode, [self::CONSUME_AFTER_COMMIT_OFFSET, self::CONSUME_BEFORE_COMMIT_OFFSET], true)) {
+            throw new \rabbit\kafka\Exception\Config(
                 'Invalid consume mode given, it must be either "ConsumerConfig::CONSUME_AFTER_COMMIT_OFFSET" or '
                 . '"ConsumerConfig::CONSUME_BEFORE_COMMIT_OFFSET"'
             );

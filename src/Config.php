@@ -166,6 +166,29 @@ abstract class Config
         $this->options['brokerVersion'] = $version;
     }
 
+    /**
+     * @throws Exception\Config
+     */
+    public function setMetadataBrokerList(string $brokerList): void
+    {
+        $brokerList = trim($brokerList);
+
+        $brokers = array_filter(
+            explode(',', $brokerList),
+            function (string $broker): bool {
+                return preg_match('/^(.*:[\d]+)$/', $broker) === 1;
+            }
+        );
+
+        if (empty($brokers)) {
+            throw new Exception\Config(
+                'Broker list must be a comma-separated list of brokers (format: "host:port"), with at least one broker'
+            );
+        }
+
+        $this->options['metadataBrokerList'] = $brokers;
+    }
+
     public function clear(): void
     {
         $this->options = [];

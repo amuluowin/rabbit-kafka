@@ -209,7 +209,7 @@ class Process
             $this->logger->debug('Start sync metadata request params:' . json_encode($params));
             $requestData = Protocol::encode(Protocol::METADATA_REQUEST, $params);
             $connect->write($requestData);
-            
+
             return;
         }
 
@@ -229,7 +229,7 @@ class Process
 
         $requestData = Protocol::encode(Protocol::GROUP_COORDINATOR_REQUEST, $params);
         $connect->write($requestData);
-        
+
     }
 
     protected function joinGroup(): void
@@ -262,7 +262,7 @@ class Process
 
         $requestData = Protocol::encode(Protocol::JOIN_GROUP_REQUEST, $params);
         $connect->write($requestData);
-        
+
         $this->logger->debug('Join group start, params:' . json_encode($params));
     }
 
@@ -314,7 +314,7 @@ class Process
         $this->logger->debug('Sync group start, params:' . json_encode($params));
 
         $connect->write($requestData);
-        
+
     }
 
     public function failSyncGroup(int $errorCode): void
@@ -380,7 +380,7 @@ class Process
 
         $requestData = Protocol::encode(Protocol::HEART_BEAT_REQUEST, $params);
         $connect->write($requestData);
-        
+
     }
 
     public function failHeartbeat(int $errorCode): void
@@ -496,7 +496,7 @@ class Process
 
         $requestData = Protocol::encode(Protocol::OFFSET_FETCH_REQUEST, $params);
         $connect->write($requestData);
-        
+
     }
 
     /**
@@ -698,7 +698,7 @@ class Process
         $this->logger->debug('Commit current fetch offset start, params:' . json_encode($params));
         $requestData = Protocol::encode(Protocol::OFFSET_COMMIT_REQUEST, $params);
         $connect->write($requestData);
-        
+
     }
 
     /**
