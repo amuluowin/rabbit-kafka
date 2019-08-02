@@ -20,6 +20,8 @@ class Client implements InitInterface
     private $broker;
     /** @var RecordValidator */
     private $recordValidator;
+    /** @var array */
+    private $msgBuffer = [];
 
     /**
      * Client constructor.
@@ -59,6 +61,7 @@ class Client implements InitInterface
             return;
         }
 
+        $recordSet = array_merge($recordSet, array_splice($this->msgBuffer, 0));
         $sendData = $this->convertRecordSet($recordSet);
         foreach ($sendData as $brokerId => $topicList) {
             $connect = $this->broker->getPoolConnect();
@@ -90,21 +93,25 @@ class Client implements InitInterface
 
     public function syncMeta(): void
     {
-        $this->logger->debug('Start sync metadata request');
         $socket = $this->broker->getPoolConnect();
-        $params = [];
-        $requestData = ProtocolTool::encode(ProtocolTool::METADATA_REQUEST, $params);
-        $socket->send($requestData);
-        $dataLen = Protocol::unpack(Protocol::BIT_B32, $socket->recv(4));
-        $data = $socket->recv($dataLen);
-        $socket->release();
-        $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($data, 0, 4));
-        $result = ProtocolTool::decode(ProtocolTool::METADATA_REQUEST, substr($data, 4));
+        rgo(function () use ($socket) {
+            while (true) {
+                $this->logger->debug('Start sync metadata request');
+                $params = [];
+                $requestData = ProtocolTool::encode(ProtocolTool::METADATA_REQUEST, $params);
+                $socket->send($requestData);
+                $dataLen = Protocol::unpack(Protocol::BIT_B32, $socket->recv(4));
+                $data = $socket->recv($dataLen);
+                $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($data, 0, 4));
+                $result = ProtocolTool::decode(ProtocolTool::METADATA_REQUEST, substr($data, 4));
 
-        if (!isset($result['brokers'], $result['topics'])) {
-            throw new Exception('Get metadata is fail, brokers or topics is null.');
-        }
-        $this->broker->setData($result['topics'], $result['brokers']);
+                if (!isset($result['brokers'], $result['topics'])) {
+                    throw new Exception('Get metadata is fail, brokers or topics is null.');
+                }
+                $this->broker->setData($result['topics'], $result['brokers']);
+                \Co::sleep(30);
+            }
+        });
     }
 
     /**
@@ -118,7 +125,14 @@ class Client implements InitInterface
         $topics = $this->broker->getTopics();
 
         foreach ($recordSet as $record) {
-            $this->recordValidator->validate($record, $topics);
+            try {
+                $this->recordValidator->validate($record, $topics);
+            } catch (Exception\InvalidRecordInSet $exception) {
+                if (strpos($exception->getMessage(), 'Did you forget to create it') !== false) {
+                    $this->msgBuffer[] = $record;
+                }
+                continue;
+            }
 
             $topicMeta = $topics[$record['topic']];
             $partNums = array_keys($topicMeta);
