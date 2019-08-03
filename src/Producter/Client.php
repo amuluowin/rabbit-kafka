@@ -96,20 +96,23 @@ class Client implements InitInterface
         $socket = $this->broker->getPoolConnect();
         rgo(function () use ($socket) {
             while (true) {
-                $this->logger->debug('Start sync metadata request');
-                $params = [];
-                $requestData = ProtocolTool::encode(ProtocolTool::METADATA_REQUEST, $params);
-                $socket->send($requestData);
-                $dataLen = Protocol::unpack(Protocol::BIT_B32, $socket->recv(4));
-                $data = $socket->recv($dataLen);
-                $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($data, 0, 4));
-                $result = ProtocolTool::decode(ProtocolTool::METADATA_REQUEST, substr($data, 4));
+                try {
+                    $this->logger->debug('Start sync metadata request');
+                    $params = [];
+                    $requestData = ProtocolTool::encode(ProtocolTool::METADATA_REQUEST, $params);
+                    $socket->send($requestData);
+                    $dataLen = Protocol::unpack(Protocol::BIT_B32, $socket->recv(4));
+                    $data = $socket->recv($dataLen);
+                    $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($data, 0, 4));
+                    $result = ProtocolTool::decode(ProtocolTool::METADATA_REQUEST, substr($data, 4));
 
-                if (!isset($result['brokers'], $result['topics'])) {
-                    throw new Exception('Get metadata is fail, brokers or topics is null.');
+                    if (!isset($result['brokers'], $result['topics'])) {
+                        throw new Exception('Get metadata is fail, brokers or topics is null.');
+                    }
+                    $this->broker->setData($result['topics'], $result['brokers']);
+                } finally {
+                    \Co::sleep(30);
                 }
-                $this->broker->setData($result['topics'], $result['brokers']);
-                \Co::sleep(30);
             }
         });
     }
