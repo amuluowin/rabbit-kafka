@@ -90,12 +90,11 @@ class Assignment
     }
 
     /**
-     * @param string[] $result
+     * @param array $result
+     * @param array $topics
      */
-    public function assign(array $result, Broker $broker): void
+    public function assign(array $result, array $topics): void
     {
-        $topics = $broker->getTopics();
-
         $memberCount = count($result);
 
         $count = 0;

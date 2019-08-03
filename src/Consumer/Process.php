@@ -285,7 +285,7 @@ class Process
         $this->assignment->setGenerationId($result['generationId']);
 
         if ($result['leaderId'] === $result['memberId']) { // leader assign partition
-            $this->assignment->assign($result['members'], $this->broker);
+            $this->assignment->assign($result['members'], $this->broker->getTopics());
         }
 
         $this->logger->debug(sprintf('Join group sucess, params: %s', json_encode($result)));
