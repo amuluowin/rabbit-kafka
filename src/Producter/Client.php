@@ -98,20 +98,18 @@ class Client implements InitInterface
 
     public function syncMeta(): void
     {
-        rgo(function () {
+        $socket = $this->broker->getPoolConnect();
+        rgo(function () use ($socket) {
             while (true) {
                 try {
-                    $socket = $this->broker->getPoolConnect();
                     $this->logger->debug('Start sync metadata request');
                     $params = [];
                     $requestData = ProtocolTool::encode(ProtocolTool::METADATA_REQUEST, $params);
                     $socket->send($requestData);
                     $dataLen = Protocol::unpack(Protocol::BIT_B32, $socket->recv(4));
                     $data = $socket->recv($dataLen);
-                    $socket->release();
                     $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($data, 0, 4));
                     $result = ProtocolTool::decode(ProtocolTool::METADATA_REQUEST, substr($data, 4));
-
                     if (!isset($result['brokers'], $result['topics'])) {
                         throw new Exception('Get metadata is fail, brokers or topics is null.');
                     }
