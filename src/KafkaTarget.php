@@ -74,9 +74,7 @@ class KafkaTarget extends AbstractTarget
                         'value' => json_encode($log),
                         'key' => ''
                     ]
-                ],function (array $data){
-                    var_dump($data);
-                });
+                ]);
             }
         }
     }
