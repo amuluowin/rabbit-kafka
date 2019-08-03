@@ -22,6 +22,8 @@ class Client implements InitInterface
     private $recordValidator;
     /** @var array */
     private $msgBuffer = [];
+    /** @var bool */
+    private $isInited = false;
 
     /**
      * Client constructor.
@@ -41,7 +43,10 @@ class Client implements InitInterface
 
     public function init()
     {
-        $this->syncMeta();
+        if (!$this->isInited) {
+            $this->isInited = true;
+            $this->syncMeta();
+        }
     }
 
     /**
