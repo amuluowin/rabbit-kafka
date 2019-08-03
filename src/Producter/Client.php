@@ -124,17 +124,13 @@ class Client
     protected function convertRecordSet(array $recordSet): array
     {
         $sendData = [];
-        $topics = $this->broker->getTopics();
+        while (empty($topics = $this->broker->getTopics())) {
+            \Co::sleep(0.5);
+        }
 
         foreach ($recordSet as $record) {
-            try {
-                $this->recordValidator->validate($record, $topics);
-            } catch (Exception\InvalidRecordInSet $exception) {
-                if (strpos($exception->getMessage(), 'Did you forget to create it') !== false) {
-                    $this->msgBuffer[] = $record;
-                }
-                continue;
-            }
+
+            $this->recordValidator->validate($record, $topics);
 
             $topicMeta = $topics[$record['topic']];
             $partNums = array_keys($topicMeta);

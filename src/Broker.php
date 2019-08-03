@@ -148,7 +148,7 @@ class Broker
     }
 
     /**
-     * @return mixed[][]
+     * @return array
      */
     public function getTopics(): array
     {
