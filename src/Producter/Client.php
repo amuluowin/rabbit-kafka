@@ -7,13 +7,12 @@ use DI\DependencyException;
 use DI\NotFoundException;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
-use rabbit\contract\InitInterface;
 use rabbit\kafka\Broker;
 use rabbit\kafka\Exception;
 use rabbit\kafka\Protocol as ProtocolTool;
 use rabbit\kafka\Protocol\Protocol;
 
-class Client implements InitInterface
+class Client
 {
     use LoggerAwareTrait;
     /** @var Broker */
@@ -41,14 +40,6 @@ class Client implements InitInterface
         ProtocolTool::init($broker->getConfig()->getBrokerVersion(), $logger);
     }
 
-    public function init()
-    {
-        if (!$this->isInited) {
-            $this->isInited = true;
-            $this->syncMeta();
-        }
-    }
-
     /**
      * @param array $recordSet
      * @param callable|null $callback
@@ -57,6 +48,10 @@ class Client implements InitInterface
      */
     public function send(array $recordSet, ?callable $callback = null): void
     {
+        if (!$this->isInited) {
+            $this->isInited = true;
+            $this->syncMeta();
+        }
         /** @var ProducterConfig $config */
         $config = $this->broker->getConfig();
         $requiredAck = $config->getRequiredAck();

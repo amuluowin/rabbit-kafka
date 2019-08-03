@@ -134,7 +134,7 @@ class Socket extends CommonSocket
 
         do {
             $bytesToWrite = strlen($this->writeBuffer);
-            $bytesWritten = \Co::fwrite($this->stream, $this->writeBuffer);
+            $bytesWritten = @fwrite($this->stream, $this->writeBuffer);
 
             if ($this->isSocketDead()) {
                 $this->reconnect();

@@ -38,7 +38,6 @@ class KafkaTarget extends AbstractTarget
     public function __construct(Client $client)
     {
         $this->client = $client;
-        $this->client->init();
     }
 
     /**
