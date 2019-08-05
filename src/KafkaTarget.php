@@ -5,6 +5,7 @@ namespace rabbit\kafka;
 
 
 use rabbit\helper\ArrayHelper;
+use rabbit\helper\StringHelper;
 use rabbit\kafka\Producter\Client;
 use rabbit\log\targets\AbstractTarget;
 
@@ -47,12 +48,26 @@ class KafkaTarget extends AbstractTarget
     public function export(array $messages, bool $flush = true): void
     {
         foreach ($messages as $module => $message) {
-            foreach ($message as $value) {
-                ArrayHelper::remove($value, '%c');
+            foreach ($message as $msg) {
+                if (is_string($msg)) {
+                    switch (ini_get('seaslog.appender')) {
+                        case '2':
+                        case '3':
+                            $msg = trim(substr($msg, StringHelper::str_n_pos($msg, ' ', 6)));
+                            break;
+                        case '1':
+                        default:
+                            $fileName = basename($module);
+                            $module = substr($fileName, 0, strrpos($fileName, '_'));
+                    }
+                    $msg = explode($this->split, $msg);
+                } else {
+                    ArrayHelper::remove($msg, '%c');
+                }
                 $log = [
                     'appname' => $module,
                 ];
-                foreach ($value as $index => $value) {
+                foreach ($msg as $index => $value) {
                     [$name, $type] = $this->template[$index];
                     switch ($type) {
                         case "string":
