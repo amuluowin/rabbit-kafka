@@ -64,6 +64,9 @@ class KafkaTarget extends AbstractTarget
                 } else {
                     ArrayHelper::remove($msg, '%c');
                 }
+                if (!empty($this->levelList) && !in_array($msg[$this->levelIndex], $this->levelList)) {
+                    continue;
+                }
                 $log = [
                     'appname' => $module,
                 ];
