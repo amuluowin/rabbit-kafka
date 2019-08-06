@@ -60,7 +60,7 @@ class KafkaTarget extends AbstractTarget
                             $fileName = basename($module);
                             $module = substr($fileName, 0, strrpos($fileName, '_'));
                     }
-                    $msg = explode($this->split, $msg);
+                    $msg = explode($this->split, trim($msg));
                 } else {
                     ArrayHelper::remove($msg, '%c');
                 }
