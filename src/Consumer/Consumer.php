@@ -12,7 +12,7 @@ use rabbit\core\Loop;
  * Class Consumer
  * @package rabbit\kafka\Consumer
  */
-class Client
+class Consumer
 {
     use LoggerAwareTrait;
     /** @var Process */

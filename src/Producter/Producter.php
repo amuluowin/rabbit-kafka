@@ -12,7 +12,7 @@ use rabbit\kafka\Exception;
 use rabbit\kafka\Protocol as ProtocolTool;
 use rabbit\kafka\Protocol\Protocol;
 
-class Client
+class Producter
 {
     use LoggerAwareTrait;
     /** @var Broker */

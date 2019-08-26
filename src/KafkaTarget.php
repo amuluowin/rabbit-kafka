@@ -6,7 +6,7 @@ namespace rabbit\kafka;
 
 use rabbit\helper\ArrayHelper;
 use rabbit\helper\StringHelper;
-use rabbit\kafka\Producter\Client;
+use rabbit\kafka\Producter\Producter;
 use rabbit\log\targets\AbstractTarget;
 
 /**
@@ -36,7 +36,7 @@ class KafkaTarget extends AbstractTarget
      * KafkaTarget constructor.
      * @param Client $client
      */
-    public function __construct(Client $client)
+    public function __construct(Producter $client)
     {
         $this->client = $client;
     }
