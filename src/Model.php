@@ -3,7 +3,8 @@
 
 namespace rabbit\kafka;
 
-use rabbit\kafka\Consumer\Consumer;
+use rabbit\exception\InvalidCallException;
+use rabbit\kafka\Consumer\ConsumeManager;
 use rabbit\kafka\Producter\Producter;
 use rabbit\model\Model as BaseModel;
 
@@ -15,12 +16,22 @@ abstract class Model extends BaseModel
 {
     /** @var Producter */
     protected $producter;
-    /** @var Consumer */
-    protected $consumer;
     /** @var string */
     protected $topic;
     /** @var string */
     protected $key = '';
+
+    /**
+     * @param $name
+     * @param $arguments
+     */
+    public function __call($name, $arguments)
+    {
+        if (is_callable(ConsumeManager::$name)) {
+            return ConsumeManager::$name(...$arguments);
+        }
+        throw new InvalidCallException("Can not call method $name");
+    }
 
     /**
      * @throws Exception
@@ -39,11 +50,19 @@ abstract class Model extends BaseModel
     }
 
     /**
+     * @return bool
+     */
+    public function addMonit(): bool
+    {
+        if (!ConsumeManager::register($this->topic, [$this, 'get'])) {
+            throw new InvalidCallException("Already add Monit!");
+        }
+        return true;
+    }
+
+    /**
      * @param callable $function
      * @return array
      */
-    public function get(callable $function): array
-    {
-        $this->consumer->start($function);
-    }
+    abstract protected function consume(int $part, array $message): void;
 }

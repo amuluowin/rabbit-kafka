@@ -20,10 +20,6 @@ class Process
 {
     use LoggerAwareTrait;
     /**
-     * @var callable|null
-     */
-    protected $consumer;
-    /**
      * @var string[][][]
      */
     protected $messages = [];
@@ -90,9 +86,11 @@ class Process
         $this->state->init($this->broker->getConfig()->getMetadataRefreshIntervalMs());
     }
 
-    public function start(callable $consumer): void
+    /**
+     * @param callable $consumer
+     */
+    public function start(): void
     {
-        $this->consumer = $consumer;
         $this->init();
         $this->state->start();
     }
@@ -205,7 +203,10 @@ class Process
                 continue;
             }
 
-            $params = $config->getTopics();
+            $params = ConsumeManager::getTopics();
+            if (empty($params)) {
+                return;
+            }
             $this->logger->debug('Start sync metadata request params:' . json_encode($params));
             $requestData = Protocol::encode(Protocol::METADATA_REQUEST, $params);
             $connect->write($requestData);
@@ -242,7 +243,10 @@ class Process
         }
 
         $config = $this->broker->getConfig();
-        $topics = $config->getTopics();
+        $topics = ConsumeManager::getTopics();
+        if (empty($topics)) {
+            return;
+        }
         $memberId = $this->assignment->getMemberId();
 
         $params = [
@@ -636,9 +640,7 @@ class Process
         foreach ($this->messages as $topic => $value) {
             foreach ($value as $partition => $messages) {
                 foreach ($messages as $message) {
-                    if ($this->consumer !== null) {
-                        ($this->consumer)($topic, $partition, $message);
-                    }
+                    ConsumeManager::consume($topic, $partition, $message);
                 }
             }
         }
