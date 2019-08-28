@@ -27,7 +27,7 @@ abstract class Model extends BaseModel
      */
     public function __call($name, $arguments)
     {
-        if (is_callable("rabbit\kafka\Consumer\ConsumeManager::$name")) {
+        if (is_callable(ConsumeManager::$name)) {
             return ConsumeManager::$name(...$arguments);
         }
         throw new InvalidCallException("Can not call method $name");
