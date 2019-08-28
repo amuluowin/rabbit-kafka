@@ -27,7 +27,7 @@ abstract class Model extends BaseModel
      */
     public function __call($name, $arguments)
     {
-        if (is_callable(ConsumeManager::$name)) {
+        if (is_callable("rabbit\kafka\Consumer\ConsumeManager::$name")) {
             return ConsumeManager::$name(...$arguments);
         }
         throw new InvalidCallException("Can not call method $name");
@@ -54,7 +54,7 @@ abstract class Model extends BaseModel
      */
     public function addMonit(): bool
     {
-        if (!ConsumeManager::register($this->topic, [$this, 'get'])) {
+        if (!ConsumeManager::register($this->topic, [$this, 'consume'])) {
             throw new InvalidCallException("Already add Monit!");
         }
         return true;
