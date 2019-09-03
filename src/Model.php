@@ -27,7 +27,10 @@ abstract class Model extends BaseModel
      */
     public function __call($name, $arguments)
     {
-        if (is_callable(ConsumeManager::$name)) {
+        if (is_callable([$this, $name])) {
+            return $this->$name(...$arguments);
+        }
+        if (is_callable(ConsumeManager::class . "::" . $name)) {
             return ConsumeManager::$name(...$arguments);
         }
         throw new InvalidCallException("Can not call method $name");

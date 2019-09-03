@@ -214,7 +214,7 @@ class Process
             return;
         }
 
-        throw ConnectionException::fromBrokerList($brokerList);
+        throw ConnectionException::fromBrokerList(implode(';', $brokerHost));
     }
 
     protected function getGroupBrokerId(): void
