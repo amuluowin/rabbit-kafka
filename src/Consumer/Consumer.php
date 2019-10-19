@@ -3,7 +3,6 @@
 
 namespace rabbit\kafka\Consumer;
 
-
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use rabbit\contract\InitInterface;

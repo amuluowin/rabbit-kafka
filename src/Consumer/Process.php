@@ -230,7 +230,6 @@ class Process
 
         $requestData = Protocol::encode(Protocol::GROUP_COORDINATOR_REQUEST, $params);
         $connect->write($requestData);
-
     }
 
     protected function joinGroup(): void
@@ -274,8 +273,11 @@ class Process
     {
         $memberId = $this->assignment->getMemberId();
 
-        $this->logger->error(sprintf('Join group fail, need rejoin, errorCode %d, memberId: %s', $errorCode,
-            $memberId));
+        $this->logger->error(sprintf(
+            'Join group fail, need rejoin, errorCode %d, memberId: %s',
+            $errorCode,
+            $memberId
+        ));
         $this->stateConvert($errorCode);
     }
 
@@ -318,7 +320,6 @@ class Process
         $this->logger->debug('Sync group start, params:' . json_encode($params));
 
         $connect->write($requestData);
-
     }
 
     public function failSyncGroup(int $errorCode): void
@@ -384,7 +385,6 @@ class Process
 
         $requestData = Protocol::encode(Protocol::HEART_BEAT_REQUEST, $params);
         $connect->write($requestData);
-
     }
 
     public function failHeartbeat(int $errorCode): void
@@ -500,7 +500,6 @@ class Process
 
         $requestData = Protocol::encode(Protocol::OFFSET_FETCH_REQUEST, $params);
         $connect->write($requestData);
-
     }
 
     /**
@@ -700,7 +699,6 @@ class Process
         $this->logger->debug('Commit current fetch offset start, params:' . json_encode($params));
         $requestData = Protocol::encode(Protocol::OFFSET_COMMIT_REQUEST, $params);
         $connect->write($requestData);
-
     }
 
     /**

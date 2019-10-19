@@ -81,8 +81,10 @@ class Producter
                     $recordSet = $connect->recv($dataLen);
                     $connect->release();
                     $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($recordSet, 0, 4));
-                    $callback && $callback(ProtocolTool::decode(ProtocolTool::PRODUCE_REQUEST,
-                        substr($recordSet, 4)));
+                    $callback && $callback(ProtocolTool::decode(
+                        ProtocolTool::PRODUCE_REQUEST,
+                        substr($recordSet, 4)
+                    ));
                 } else {
                     $connect->send($requestData);
                     $connect->release();
@@ -129,7 +131,6 @@ class Producter
         }
 
         foreach ($recordSet as $record) {
-
             $this->recordValidator->validate($record, $topics);
 
             $topicMeta = $topics[$record['topic']];

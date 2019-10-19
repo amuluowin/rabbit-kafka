@@ -3,7 +3,6 @@
 
 namespace rabbit\kafka;
 
-
 use rabbit\helper\ArrayHelper;
 use rabbit\helper\StringHelper;
 use rabbit\kafka\Producter\Producter;

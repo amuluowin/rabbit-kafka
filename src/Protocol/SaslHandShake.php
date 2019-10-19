@@ -36,8 +36,10 @@ class SaslHandShake extends Protocol
 
         if (!in_array($mechanism, self::ALLOW_SASL_MECHANISMS, true)) {
             throw new ProtocolException(
-                'Invalid request SASL hand shake mechanism given, it must be one of: ' . implode('|',
-                    self::ALLOW_SASL_MECHANISMS)
+                'Invalid request SASL hand shake mechanism given, it must be one of: ' . implode(
+                    '|',
+                    self::ALLOW_SASL_MECHANISMS
+                )
             );
         }
 

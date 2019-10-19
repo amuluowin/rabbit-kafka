@@ -10,8 +10,11 @@ final class Socket extends Exception
 {
     public static function invalidLength(int $length, int $maxLength): self
     {
-        return new self(sprintf('Invalid length %d given, it should be lesser than or equals to %d', $length,
-            $maxLength));
+        return new self(sprintf(
+            'Invalid length %d given, it should be lesser than or equals to %d',
+            $length,
+            $maxLength
+        ));
     }
 
     public static function notReadable(int $length): self
@@ -26,8 +29,11 @@ final class Socket extends Exception
 
     public static function timedOutWithRemainingBytes(int $length, int $remainingBytes): self
     {
-        return new self(sprintf('Timed out while reading %d bytes from stream, %d bytes are still needed', $length,
-            $remainingBytes));
+        return new self(sprintf(
+            'Timed out while reading %d bytes from stream, %d bytes are still needed',
+            $length,
+            $remainingBytes
+        ));
     }
 
     public static function unexpectedEOF(int $length): self

@@ -93,7 +93,6 @@ class State
                     }
                 }
             ]);
-
         }
 
         // start sync metadata
