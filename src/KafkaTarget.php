@@ -16,7 +16,7 @@ class KafkaTarget extends AbstractTarget
 {
     /** @var Client */
     private $client;
-
+    /** @var array */
     private $template = [
         ['datetime', 'timespan'],
         ['level', 'string'],
@@ -39,6 +39,12 @@ class KafkaTarget extends AbstractTarget
     {
         $this->client = $client;
     }
+
+    public function init()
+    {
+        $this->client->init();
+    }
+
 
     /**
      * @param array $messages
