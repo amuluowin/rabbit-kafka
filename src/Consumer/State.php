@@ -52,6 +52,9 @@ class State
     /** @var bool */
     private $running = false;
 
+    /**
+     * @param int $ms
+     */
     public function init(int $ms): void
     {
         $this->callStatus = [
@@ -84,6 +87,12 @@ class State
             }
 
             $interval = $option['interval'] ?? 200;
+
+            if ($request === self::REQUEST_METADATA) {
+                if ($this->checkRun($request) && $option['func'] !== null) {
+                    $this->processing($request, $option['func']());
+                }
+            }
 
             Loop::addTimer('kafka', [
                 (int)$interval,

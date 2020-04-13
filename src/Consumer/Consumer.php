@@ -27,11 +27,15 @@ class Consumer implements InitInterface
     public function __construct(
         Process $process,
         LoggerInterface $logger
-    ) {
+    )
+    {
         $this->process = $process;
         $this->logger = $logger;
     }
 
+    /**
+     * @return mixed|void
+     */
     public function init()
     {
 //        $this->start();
@@ -41,10 +45,10 @@ class Consumer implements InitInterface
     /**
      * @param callable $function
      */
-    public function start(): void
+    public function start(bool $isLog = false): void
     {
         if ($this->running) {
-            $this->logger->error('Consumer is already being executed');
+            $isLog && $this->logger->error('Consumer is already being executed');
             return;
         }
         Loop::run('kafka');
@@ -52,10 +56,10 @@ class Consumer implements InitInterface
         $this->running = true;
     }
 
-    public function stop(): void
+    public function stop(bool $isLog = false): void
     {
         if ($this->running === false) {
-            $this->running->error('Consumer is not running');
+            $isLog && $this->running->error('Consumer is not running');
             return;
         }
         $this->process->stop();

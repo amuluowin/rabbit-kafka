@@ -14,8 +14,6 @@ use rabbit\model\Model as BaseModel;
  */
 abstract class Model extends BaseModel
 {
-    /** @var Producter */
-    protected $producter;
     /** @var string */
     protected $topic;
     /** @var string */
@@ -37,35 +35,10 @@ abstract class Model extends BaseModel
     }
 
     /**
-     * @throws Exception
-     * @throws Exception\Protocol
-     */
-    public function save(bool $validated = true): void
-    {
-        $validated && $this->validate();
-        $this->producter->send([
-            [
-                'topic' => $this->topic,
-                'value' => json_encode($this->attributes),
-                'key' => $this->key
-            ]
-        ]);
-    }
-
-    /**
-     * @return bool
-     */
-    public function addMonit(): bool
-    {
-        if (!ConsumeManager::register($this->topic, [$this, 'consume'])) {
-            throw new InvalidCallException("Already add Monit!");
-        }
-        return true;
-    }
-
-    /**
-     * @param callable $function
      * @return array
      */
-    abstract protected function consume(int $part, array $message): void;
+    public static function rules(): array
+    {
+        return [];
+    }
 }
