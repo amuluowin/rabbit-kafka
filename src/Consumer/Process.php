@@ -35,7 +35,8 @@ class Process
         Assignment $assignment,
         State $state,
         LoggerInterface $logger
-    ) {
+    )
+    {
         $this->broker = $broker;
         $this->assignment = $assignment;
         $this->state = $state;
@@ -93,11 +94,6 @@ class Process
     {
         $this->init();
         $this->state->start();
-    }
-
-    public function stop(): void
-    {
-        $this->state->stop();
     }
 
     /**
@@ -549,7 +545,6 @@ class Process
      */
     protected function fetch()
     {
-        $this->messages = [];
         $context = [];
         $topics = $this->assignment->getTopics();
         $consumerOffsets = $this->assignment->getConsumerOffsets();
@@ -636,15 +631,15 @@ class Process
 
     protected function consumeMessage(): void
     {
-        foreach ($this->messages as $topic => $value) {
+        $allMessage = $this->messages;
+        $this->messages = [];
+        foreach ($allMessage as $topic => $value) {
             foreach ($value as $partition => $messages) {
                 foreach ($messages as $message) {
                     ConsumeManager::consume($topic, $partition, $message);
                 }
             }
         }
-        unset($this->messages);
-        $this->messages = [];
     }
 
     protected function commit(): void

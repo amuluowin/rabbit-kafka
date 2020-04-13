@@ -62,7 +62,6 @@ class Consumer implements InitInterface
             $isLog && $this->running->error('Consumer is not running');
             return;
         }
-        $this->process->stop();
         $this->process = null;
         Loop::stop('kafka');
         $this->running = false;

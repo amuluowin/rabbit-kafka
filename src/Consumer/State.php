@@ -28,7 +28,15 @@ class State
     public const STATUS_PROCESS = 8;
     public const STATUS_FINISH = 16;
 
-    private const CLEAN_REQUEST_STATE = [
+    /**
+     * @var mixed[]
+     */
+    private $callStatus = [];
+
+    /**
+     * @var mixed[]
+     */
+    private $requests = [
         self::REQUEST_METADATA => [],
         self::REQUEST_GETGROUP => [],
         self::REQUEST_JOINGROUP => [],
@@ -39,16 +47,6 @@ class State
         self::REQUEST_FETCH_OFFSET => ['interval' => 2000],
         self::REQUEST_COMMIT_OFFSET => ['norepeat' => true],
     ];
-
-    /**
-     * @var mixed[]
-     */
-    private $callStatus = [];
-
-    /**
-     * @var mixed[]
-     */
-    private $requests = self::CLEAN_REQUEST_STATE;
     /** @var bool */
     private $running = false;
 
@@ -88,32 +86,22 @@ class State
 
             $interval = $option['interval'] ?? 200;
 
-            if ($request === self::REQUEST_METADATA) {
-                if ($this->checkRun($request) && $option['func'] !== null) {
-                    $this->processing($request, $option['func']());
-                }
-            }
-
             Loop::addTimer('kafka', [
                 (int)$interval,
                 function (int $watcherId) use ($request, $option): void {
-                    if ($this->checkRun($request) && $option['func'] !== null) {
-                        $this->processing($request, $option['func']());
+                    if ($this->checkRun($request) && $option['func'] != null) {
+                        $context = call_user_func($option['func']);
+                        $this->processing($request, $context);
                     }
                 }
             ]);
         }
 
         // start sync metadata
-        if (isset($request, $this->requests[self::REQUEST_METADATA]['func'])) {
-            $this->processing($request, $this->requests[self::REQUEST_METADATA]['func']());
+        if (isset($this->requests[self::REQUEST_METADATA]['func'])) {
+            $context = call_user_func($this->requests[self::REQUEST_METADATA]['func']);
+            $this->processing($request, $context);
         }
-    }
-
-    public function stop(): void
-    {
-        $this->callStatus = [];
-        $this->requests = self::CLEAN_REQUEST_STATE;
     }
 
     /**
@@ -162,7 +150,7 @@ class State
                 $contextStatus = $this->callStatus[$key]['context'];
                 if (empty($contextStatus)) {
                     $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
-                    $this->requests[self::REQUEST_COMMIT_OFFSET]['func']();
+                    call_user_func($this->requests[self::REQUEST_COMMIT_OFFSET]['func']);
                 }
                 break;
         }
