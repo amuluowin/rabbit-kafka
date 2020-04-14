@@ -33,11 +33,11 @@ class Producter implements InitInterface
      * @throws DependencyException
      * @throws NotFoundException
      */
-    public function __construct(Broker $broker, RecordValidator $recordValidator, ?LoggerInterface $logger = null)
+    public function __construct(Broker $broker, RecordValidator $recordValidator = null, ?LoggerInterface $logger = null)
     {
         $this->broker = $broker;
         $this->logger = $logger;
-        $this->recordValidator = $recordValidator;
+        $this->recordValidator = $recordValidator ?? new RecordValidator();
         ProtocolTool::init($broker->getConfig()->getBrokerVersion(), $logger);
     }
 
