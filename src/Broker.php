@@ -9,6 +9,7 @@
 namespace rabbit\kafka;
 
 use Psr\Log\LoggerAwareTrait;
+use rabbit\core\BaseObject;
 use rabbit\kafka\Sasl\Gssapi;
 use rabbit\kafka\Sasl\Plain;
 use rabbit\kafka\Sasl\Scram;
@@ -17,7 +18,7 @@ use rabbit\socket\socket\AbstractSocketConnection;
 use function in_array;
 use function sprintf;
 
-class Broker
+class Broker extends BaseObject
 {
     use LoggerAwareTrait;
     /**

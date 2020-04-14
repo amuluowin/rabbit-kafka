@@ -185,7 +185,9 @@ class Process
         $config = $this->broker->getConfig();
 
         $brokerHost = $config->getMetadataBrokerList();
-
+        if (is_string($brokerHost)) {
+            $brokerHost = explode(',', $brokerHost);
+        }
         if (count($brokerHost) === 0) {
             throw new Exception('No valid broker configured');
         }
