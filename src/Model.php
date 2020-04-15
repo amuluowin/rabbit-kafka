@@ -46,6 +46,6 @@ abstract class Model extends BaseModel
      */
     public function toJsonString(): string
     {
-        return json_encode($this->attributes);
+        return json_encode($this->attributes, JSON_UNESCAPED_UNICODE);
     }
 }
