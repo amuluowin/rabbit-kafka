@@ -24,7 +24,7 @@ class ProductModel extends Model
         $this->producter->send([
             [
                 'topic' => $this->topic,
-                'value' => json_encode($this->attributes),
+                'value' => $this->toJsonString(),
                 'key' => $this->key
             ]
         ]);

@@ -5,7 +5,6 @@ namespace rabbit\kafka;
 
 use rabbit\exception\InvalidCallException;
 use rabbit\kafka\Consumer\ConsumeManager;
-use rabbit\kafka\Producter\Producter;
 use rabbit\model\Model as BaseModel;
 
 /**
@@ -40,5 +39,13 @@ abstract class Model extends BaseModel
     public static function rules(): array
     {
         return [];
+    }
+
+    /**
+     * @return string
+     */
+    public function toJsonString(): string
+    {
+        return json_encode($this->attributes);
     }
 }
