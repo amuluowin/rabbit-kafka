@@ -140,7 +140,7 @@ class Socket extends CommonSocket
                 $this->reconnect();
             }
             $this->writeBuffer = substr($this->writeBuffer, $bytesWritten);
-        } while (strlen($this->writeBuffer));
+        } while (is_string($this->writeBuffer) && strlen($this->writeBuffer));
     }
 
     /**
