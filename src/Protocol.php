@@ -6,6 +6,7 @@ namespace rabbit\kafka;
 use DI\DependencyException;
 use DI\NotFoundException;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use rabbit\core\ObjectFactory;
 
 class Protocol
@@ -195,7 +196,7 @@ class Protocol
                 'class' => $className,
                 'version' => $version
             ]);
-            self::$objects[$key]->setLogger($logger);
+            self::$objects[$key]->setLogger($logger ?? new NullLogger());
         }
     }
 

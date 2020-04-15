@@ -9,6 +9,8 @@
 namespace rabbit\kafka;
 
 use Psr\Log\LoggerAwareTrait;
+use Psr\Log\NullLogger;
+use rabbit\contract\InitInterface;
 use rabbit\core\BaseObject;
 use rabbit\kafka\Sasl\Gssapi;
 use rabbit\kafka\Sasl\Plain;
@@ -18,7 +20,7 @@ use rabbit\socket\socket\AbstractSocketConnection;
 use function in_array;
 use function sprintf;
 
-class Broker extends BaseObject
+class Broker extends BaseObject implements InitInterface
 {
     use LoggerAwareTrait;
     /**
@@ -66,8 +68,13 @@ class Broker extends BaseObject
      */
     public function __construct(Config $config, ?SocketPool $pool = null)
     {
-        $this->pool = $pool;
         $this->config = $config;
+        $this->pool = $pool;
+    }
+
+    public function init()
+    {
+        $this->logger = $this->logger ?? new NullLogger();
     }
 
     /**
@@ -222,7 +229,7 @@ class Broker extends BaseObject
             if ($socket instanceof Socket && $this->process !== null) {
                 $socket->setOnReadable($this->process);
             }
-            $socket->setLogger($this->logger);
+            $socket->setLogger($this->logger ?? new NullLogger());
             $socket->connect();
             $this->{$type}[$key][] = $socket;
 

@@ -4,7 +4,7 @@
 namespace rabbit\kafka\Consumer;
 
 use Psr\Log\LoggerAwareTrait;
-use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use rabbit\contract\InitInterface;
 use rabbit\core\Loop;
 
@@ -25,12 +25,10 @@ class Consumer implements InitInterface
      * @param Process $process
      */
     public function __construct(
-        Process $process,
-        LoggerInterface $logger
+        Process $process
     )
     {
         $this->process = $process;
-        $this->logger = $logger;
     }
 
     /**
@@ -38,6 +36,7 @@ class Consumer implements InitInterface
      */
     public function init()
     {
+        $this->logger = $this->logger ?? new NullLogger();
 //        $this->start();
     }
 

@@ -19,8 +19,6 @@ use function trim;
  */
 class ConsumerConfig extends Config
 {
-    use LoggerAwareTrait;
-
     public const CONSUME_AFTER_COMMIT_OFFSET = 1;
     public const CONSUME_BEFORE_COMMIT_OFFSET = 2;
 

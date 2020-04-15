@@ -40,11 +40,6 @@ class KafkaTarget extends AbstractTarget
         $this->client = $client;
     }
 
-    public function init()
-    {
-        $this->client->init();
-    }
-
 
     /**
      * @param array $messages

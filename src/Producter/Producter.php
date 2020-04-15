@@ -3,10 +3,8 @@ declare(strict_types=1);
 
 namespace rabbit\kafka\Producter;
 
-use DI\DependencyException;
-use DI\NotFoundException;
 use Psr\Log\LoggerAwareTrait;
-use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use rabbit\contract\InitInterface;
 use rabbit\kafka\Broker;
 use rabbit\kafka\Exception;
@@ -26,23 +24,19 @@ class Producter implements InitInterface
     private $isInited = false;
 
     /**
-     * Client constructor.
+     * Producter constructor.
      * @param Broker $broker
-     * @param RecordValidator $recordValidator
-     * @param LoggerInterface|null $logger
-     * @throws DependencyException
-     * @throws NotFoundException
      */
-    public function __construct(Broker $broker, RecordValidator $recordValidator = null, ?LoggerInterface $logger = null)
+    public function __construct(Broker $broker)
     {
         $this->broker = $broker;
-        $this->logger = $logger;
-        $this->recordValidator = $recordValidator ?? new RecordValidator();
-        ProtocolTool::init($broker->getConfig()->getBrokerVersion(), $logger);
+        $this->recordValidator = new RecordValidator();
     }
 
     public function init()
     {
+        $this->logger = $this->logger ?? new NullLogger();
+        ProtocolTool::init($this->broker->getConfig()->getBrokerVersion(), $this->logger);
         $this->syncMeta();
     }
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace rabbit\kafka\Consumer;
 
 use Psr\Log\LoggerAwareTrait;
-use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use rabbit\kafka\Broker;
 use rabbit\kafka\Exception\ConnectionException;
 use rabbit\kafka\Protocol;
@@ -31,28 +31,22 @@ class Process
     private $state;
 
     public function __construct(
-        Broker $broker,
-        Assignment $assignment,
-        State $state,
-        LoggerInterface $logger
+        Broker $broker
     )
     {
         $this->broker = $broker;
-        $this->assignment = $assignment;
-        $this->state = $state;
-        $this->logger = $logger;
+        $this->assignment = new Assignment();
+        $this->state = new State();
     }
 
     public function init(): void
     {
+        $this->logger = $this->logger ?? new NullLogger();
         $config = $this->broker->getConfig();
         Protocol::init($config->getBrokerVersion(), $this->logger);
         $this->broker->setProcess(function (string $data, int $fd): void {
             $this->processRequest($data, $fd);
         });
-        if ($this->logger) {
-            $this->state->setLogger($this->logger);
-        }
         $this->state->setCallback(
             [
                 State::REQUEST_METADATA => function (): void {

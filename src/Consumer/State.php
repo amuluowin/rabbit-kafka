@@ -9,8 +9,6 @@ use function microtime;
 
 class State
 {
-    use LoggerAwareTrait;
-
     public const REQUEST_METADATA = 1;
     public const REQUEST_GETGROUP = 2;
     public const REQUEST_JOINGROUP = 3;

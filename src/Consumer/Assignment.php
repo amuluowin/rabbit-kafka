@@ -9,8 +9,6 @@ use function count;
 
 class Assignment
 {
-    use LoggerAwareTrait;
-
     /**
      * @var string
      */
