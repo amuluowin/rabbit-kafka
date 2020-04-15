@@ -7,6 +7,10 @@ use rabbit\kafka\Exception\NotSupported;
 use rabbit\kafka\Exception\Protocol as ProtocolException;
 use function substr;
 
+/**
+ * Class LeaveGroup
+ * @package rabbit\kafka\Protocol
+ */
 class LeaveGroup extends Protocol
 {
     /**

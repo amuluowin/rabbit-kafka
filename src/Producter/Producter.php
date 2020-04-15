@@ -21,7 +21,7 @@ class Producter implements InitInterface
     /** @var array */
     private $msgBuffer = [];
     /** @var bool */
-    private $isInited = false;
+    private $isSyncData = false;
 
     /**
      * Producter constructor.
@@ -37,7 +37,6 @@ class Producter implements InitInterface
     {
         $this->logger = $this->logger ?? new NullLogger();
         ProtocolTool::init($this->broker->getConfig()->getBrokerVersion(), $this->logger);
-        $this->syncMeta();
     }
 
     /**
@@ -55,6 +54,15 @@ class Producter implements InitInterface
         $compression = $config->getCompression();
         if (empty($recordSet)) {
             return;
+        }
+
+        if (!$this->isSyncData) {
+            $this->isSyncData = true;
+            rgo(function () {
+                while (true) {
+                    $this->syncMeta();
+                }
+            });
         }
 
         $recordSet = array_merge($recordSet, array_splice($this->msgBuffer, 0));

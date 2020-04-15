@@ -20,6 +20,10 @@ use rabbit\socket\socket\AbstractSocketConnection;
 use function in_array;
 use function sprintf;
 
+/**
+ * Class Broker
+ * @package rabbit\kafka
+ */
 class Broker extends BaseObject implements InitInterface
 {
     use LoggerAwareTrait;

@@ -16,6 +16,10 @@ use function sprintf;
 use function substr;
 use function trim;
 
+/**
+ * Class Process
+ * @package rabbit\kafka\Consumer
+ */
 class Process
 {
     use LoggerAwareTrait;
