@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace rabbit\kafka\Producter;
 
+use Co\System;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
 use rabbit\contract\InitInterface;
@@ -61,6 +62,7 @@ class Producter implements InitInterface
             rgo(function () {
                 while (true) {
                     $this->syncMeta();
+                    System::sleep(10);
                 }
             });
         }
