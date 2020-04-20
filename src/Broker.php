@@ -27,6 +27,7 @@ use function sprintf;
 class Broker extends BaseObject implements InitInterface
 {
     use LoggerAwareTrait;
+
     /**
      * @var int
      */
@@ -79,6 +80,14 @@ class Broker extends BaseObject implements InitInterface
     public function init()
     {
         $this->logger = $this->logger ?? new NullLogger();
+    }
+
+    /**
+     * @return SocketPool
+     */
+    public function getPool(): SocketPool
+    {
+        return $this->pool;
     }
 
     /**

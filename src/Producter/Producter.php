@@ -15,6 +15,7 @@ use rabbit\kafka\Protocol\Protocol;
 class Producter implements InitInterface
 {
     use LoggerAwareTrait;
+
     /** @var Broker */
     private $broker;
     /** @var RecordValidator */
@@ -59,28 +60,22 @@ class Producter implements InitInterface
 
         if (!$this->isSyncData) {
             $this->isSyncData = true;
-            rgo(function () {
-                while (true) {
-                    $this->syncMeta();
-                    System::sleep(10);
-                }
-            });
+            $this->syncMeta();
         }
 
         $recordSet = array_merge($recordSet, array_splice($this->msgBuffer, 0));
         $sendData = $this->convertRecordSet($recordSet);
         foreach ($sendData as $brokerId => $topicList) {
-            $connect = $this->broker->getPoolConnect();
             $params = [
                 'required_ack' => $requiredAck,
                 'timeout' => $timeout,
                 'data' => $topicList,
                 'compression' => $compression,
             ];
-
             $this->logger->debug('Send message start, params:' . json_encode($params));
             $requestData = ProtocolTool::encode(ProtocolTool::PRODUCE_REQUEST, $params);
-            rgo(function () use ($connect, $requestData, $requiredAck, $callback) {
+            rgo(function () use ($requestData, $requiredAck, $callback) {
+                $connect = $this->broker->getPoolConnect();
                 if ($requiredAck !== 0) {
                     $connect->send($requestData);
                     $dataLen = Protocol::unpack(Protocol::BIT_B32, $connect->recv(4));
@@ -102,19 +97,25 @@ class Producter implements InitInterface
     public function syncMeta(): void
     {
         $socket = $this->broker->getPoolConnect();
-        $this->logger->debug('Start sync metadata request');
-        $params = [];
-        $requestData = ProtocolTool::encode(ProtocolTool::METADATA_REQUEST, $params);
-        $socket->send($requestData);
-        $dataLen = Protocol::unpack(Protocol::BIT_B32, $socket->recv(4));
-        $data = $socket->recv($dataLen);
-        $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($data, 0, 4));
-        $result = ProtocolTool::decode(ProtocolTool::METADATA_REQUEST, substr($data, 4));
-        if (!isset($result['brokers'], $result['topics'])) {
-            throw new Exception('Get metadata is fail, brokers or topics is null.');
-        }
-        $this->broker->setData($result['topics'], $result['brokers']);
-        $socket->release();
+        $pool = $this->broker->getPool();
+        $pool->setCurrentCount($pool->getCurrentCount() - 1);
+        rgo(function () use ($socket) {
+            while (true) {
+                $this->logger->debug('Start sync metadata request');
+                $params = [];
+                $requestData = ProtocolTool::encode(ProtocolTool::METADATA_REQUEST, $params);
+                $socket->send($requestData);
+                $dataLen = Protocol::unpack(Protocol::BIT_B32, $socket->recv(4));
+                $data = $socket->recv($dataLen);
+                $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($data, 0, 4));
+                $result = ProtocolTool::decode(ProtocolTool::METADATA_REQUEST, substr($data, 4));
+                if (!isset($result['brokers'], $result['topics'])) {
+                    throw new Exception('Get metadata is fail, brokers or topics is null.');
+                }
+                $this->broker->setData($result['topics'], $result['brokers']);
+                System::sleep(10);
+            }
+        });
     }
 
     /**
