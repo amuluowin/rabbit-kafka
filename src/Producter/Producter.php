@@ -96,10 +96,11 @@ class Producter implements InitInterface
 
     public function syncMeta(): void
     {
-        $socket = $this->broker->getPoolConnect();
-        $pool = $this->broker->getPool();
-        $pool->setCurrentCount($pool->getCurrentCount() - 1);
-        rgo(function () use ($socket) {
+        rgo(function () {
+            loop:
+            $socket = $this->broker->getPoolConnect();
+            $pool = $this->broker->getPool();
+            $pool->setCurrentCount($pool->getCurrentCount() - 1);
             while (true) {
                 try {
                     $this->logger->debug('Start sync metadata request');
@@ -114,12 +115,14 @@ class Producter implements InitInterface
                         throw new Exception('Get metadata is fail, brokers or topics is null.');
                     }
                     $this->broker->setData($result['topics'], $result['brokers']);
-                    System::sleep(10);
+                    System::sleep($this->broker->getConfig()->getMetadataRefreshIntervalMs() / 1000);
                 } catch (\Throwable $exception) {
                     $this->logger->error($exception->getMessage());
                     echo $exception->getMessage();
+                    break;
                 }
             }
+            goto loop;
         });
     }
 
