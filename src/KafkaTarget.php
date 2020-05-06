@@ -44,7 +44,7 @@ class KafkaTarget extends AbstractTarget
     {
         $this->client->init();
     }
-    
+
     /**
      * @param array $messages
      * @param bool $flush
@@ -79,9 +79,6 @@ class KafkaTarget extends AbstractTarget
                     switch ($type) {
                         case "string":
                             $log[$name] = trim($value);
-                            break;
-                        case "timespan":
-                            $log[$name] = strtotime(explode('.', $value)[0]);
                             break;
                         case "int":
                             $log[$name] = (int)$value;
