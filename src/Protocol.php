@@ -6,8 +6,6 @@ namespace rabbit\kafka;
 use DI\DependencyException;
 use DI\NotFoundException;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
-use rabbit\core\ObjectFactory;
 
 class Protocol
 {
@@ -171,7 +169,7 @@ class Protocol
      * @throws DependencyException
      * @throws NotFoundException
      */
-    public static function init(string $version, ?LoggerInterface $logger = null): void
+    public static function init(string $version): void
     {
         $class = [
             Protocol\Protocol::PRODUCE_REQUEST => Protocol\Produce::class,
@@ -192,11 +190,7 @@ class Protocol
         ];
 
         foreach ($class as $key => $className) {
-            self::$objects[$key] = ObjectFactory::createObject([
-                'class' => $className,
-                'version' => $version
-            ]);
-            self::$objects[$key]->setLogger($logger ?? new NullLogger());
+            self::$objects[$key] = new $className($version);
         }
     }
 

@@ -25,7 +25,6 @@ use function version_compare;
 
 abstract class Protocol
 {
-    use LoggerAwareTrait;
     /**
      *  Default kafka broker verion
      */
@@ -174,15 +173,6 @@ abstract class Protocol
 
         // concat client id
         $binData .= self::encodeString($clientId, self::PACK_INT16);
-
-        $this->logger->debug(
-            sprintf(
-                'Start Request ClientId: %s ApiKey: %s  ApiVersion: %s',
-                $clientId,
-                self::getApiText($apiKey),
-                $this->getApiVersion($apiKey)
-            )
-        );
 
         return $binData;
     }

@@ -33,12 +33,12 @@ class Producter implements InitInterface
     {
         $this->broker = $broker;
         $this->recordValidator = new RecordValidator();
+        ProtocolTool::init($this->broker->getConfig()->getBrokerVersion());
     }
 
     public function init()
     {
         $this->logger = $this->logger ?? new NullLogger();
-        ProtocolTool::init($this->broker->getConfig()->getBrokerVersion(), $this->logger);
     }
 
     /**
@@ -72,7 +72,6 @@ class Producter implements InitInterface
                 'data' => $topicList,
                 'compression' => $compression,
             ];
-            $this->logger->debug('Send message start, params:' . json_encode($params));
             $requestData = ProtocolTool::encode(ProtocolTool::PRODUCE_REQUEST, $params);
             rgo(function () use ($requestData, $requiredAck, $callback) {
                 $connect = $this->broker->getPoolConnect();
@@ -103,7 +102,6 @@ class Producter implements InitInterface
             $pool->setCurrentCount($pool->getCurrentCount() - 1);
             while (true) {
                 try {
-                    $this->logger->debug('Start sync metadata request');
                     $params = [];
                     $requestData = ProtocolTool::encode(ProtocolTool::METADATA_REQUEST, $params);
                     $socket->send($requestData);
@@ -112,13 +110,14 @@ class Producter implements InitInterface
                     $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($data, 0, 4));
                     $result = ProtocolTool::decode(ProtocolTool::METADATA_REQUEST, substr($data, 4));
                     if (!isset($result['brokers'], $result['topics'])) {
-                        throw new Exception('Get metadata is fail, brokers or topics is null.');
+                        $this->logger->error('Get metadata is fail, brokers or topics is null.');
+                        System::sleep(2);
+                        continue;
                     }
                     $this->broker->setData($result['topics'], $result['brokers']);
                     System::sleep($this->broker->getConfig()->getMetadataRefreshIntervalMs() / 1000);
                 } catch (\Throwable $exception) {
                     $this->logger->error($exception->getMessage());
-                    echo $exception->getMessage();
                     break;
                 }
             }

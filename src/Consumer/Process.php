@@ -178,7 +178,6 @@ class Process
 
     protected function syncMeta(): void
     {
-        $this->logger->debug('Start sync metadata request');
         /** @var ConsumerConfig $config */
         $config = $this->broker->getConfig();
 
@@ -203,7 +202,6 @@ class Process
             if (empty($params)) {
                 return;
             }
-            $this->logger->debug('Start sync metadata request params:' . json_encode($params));
             $requestData = Protocol::encode(Protocol::METADATA_REQUEST, $params);
             $connect->write($requestData);
 
@@ -261,8 +259,6 @@ class Process
 
         $requestData = Protocol::encode(Protocol::JOIN_GROUP_REQUEST, $params);
         $connect->write($requestData);
-
-        $this->logger->debug('Join group start, params:' . json_encode($params));
     }
 
     public function failJoinGroup(int $errorCode): void
@@ -289,8 +285,6 @@ class Process
         if ($result['leaderId'] === $result['memberId']) { // leader assign partition
             $this->assignment->assign($result['members'], $this->broker->getTopics());
         }
-
-        $this->logger->debug(sprintf('Join group sucess, params: %s', json_encode($result)));
     }
 
     public function syncGroup(): void
@@ -313,7 +307,6 @@ class Process
         ];
 
         $requestData = Protocol::encode(Protocol::SYNC_GROUP_REQUEST, $params);
-        $this->logger->debug('Sync group start, params:' . json_encode($params));
 
         $connect->write($requestData);
     }
@@ -329,7 +322,6 @@ class Process
      */
     public function succSyncGroup(array $result): void
     {
-        $this->logger->debug(sprintf('Sync group sucess, params: %s', json_encode($result)));
         $this->state->succRun(State::REQUEST_SYNCGROUP);
 
         $topics = $this->broker->getTopics();
@@ -503,8 +495,6 @@ class Process
      */
     public function succFetchOffset(array $result): void
     {
-        $msg = sprintf('Get current fetch offset sucess, result: %s', json_encode($result));
-        $this->logger->debug($msg);
         $offsets = $this->assignment->getFetchOffsets();
 
         foreach ($result as $topic) {
@@ -582,7 +572,6 @@ class Process
                 'data' => $data,
             ];
 
-            $this->logger->debug('Fetch message start, params:' . json_encode($params));
             $requestData = Protocol::encode(Protocol::FETCH_REQUEST, $params);
             $connect->write($requestData);
             $context[] = (int)$connect->getSocket();
@@ -596,7 +585,6 @@ class Process
      */
     public function succFetch(array $result, int $fd): void
     {
-        $this->logger->debug('Fetch success, result:' . json_encode($result));
         foreach ($result['topics'] as $topic) {
             foreach ($topic['partitions'] as $part) {
                 $context = [
@@ -691,7 +679,6 @@ class Process
             'data' => $data,
         ];
 
-        $this->logger->debug('Commit current fetch offset start, params:' . json_encode($params));
         $requestData = Protocol::encode(Protocol::OFFSET_COMMIT_REQUEST, $params);
         $connect->write($requestData);
     }
@@ -701,7 +688,6 @@ class Process
      */
     public function succCommit(array $result): void
     {
-        $this->logger->debug('Commit success, result:' . json_encode($result));
         $this->state->succRun(State::REQUEST_COMMIT_OFFSET);
         foreach ($result as $topic) {
             foreach ($topic['partitions'] as $part) {

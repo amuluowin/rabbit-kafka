@@ -53,7 +53,6 @@ class Socket extends CommonSocket
         Loop::addEvent('kafka', [
             $this->stream,
             function (): void {
-                $this->logger->debug("fd=" . (int)$this->stream . ' can read!', ['module' => 'Kafka']);
                 $newData = @fread($this->stream, self::READ_MAX_LENGTH);
 
                 if ($newData) {

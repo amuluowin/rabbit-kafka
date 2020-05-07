@@ -5,8 +5,7 @@
   "require": {
     "php": "^7.1",
     "rabbit/framework": "dev-master",
-    "rabbit/socket": "dev-master",
-    "lcobucci/clock": "^1.0"
+    "rabbit/socket": "dev-master"
   },
   "license": "MIT",
   "authors": [

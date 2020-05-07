@@ -24,7 +24,7 @@ use function sprintf;
  * Class Broker
  * @package rabbit\kafka
  */
-class Broker extends BaseObject implements InitInterface
+class Broker extends BaseObject
 {
     use LoggerAwareTrait;
 
@@ -75,11 +75,6 @@ class Broker extends BaseObject implements InitInterface
     {
         $this->config = $config;
         $this->pool = $pool;
-    }
-
-    public function init()
-    {
-        $this->logger = $this->logger ?? new NullLogger();
     }
 
     /**
