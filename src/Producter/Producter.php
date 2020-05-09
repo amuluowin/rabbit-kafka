@@ -74,20 +74,24 @@ class Producter implements InitInterface
             ];
             $requestData = ProtocolTool::encode(ProtocolTool::PRODUCE_REQUEST, $params);
             rgo(function () use ($requestData, $requiredAck, $callback) {
-                $connect = $this->broker->getPoolConnect();
-                if ($requiredAck !== 0) {
-                    $connect->send($requestData);
-                    $dataLen = Protocol::unpack(Protocol::BIT_B32, $connect->recv(4));
-                    $recordSet = $connect->recv($dataLen);
-                    $connect->release();
-                    $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($recordSet, 0, 4));
-                    $callback && $callback(ProtocolTool::decode(
-                        ProtocolTool::PRODUCE_REQUEST,
-                        substr($recordSet, 4)
-                    ));
-                } else {
-                    $connect->send($requestData);
-                    $connect->release();
+                try {
+                    $connect = $this->broker->getPoolConnect();
+                    if ($requiredAck !== 0) {
+                        $connect->send($requestData);
+                        $dataLen = Protocol::unpack(Protocol::BIT_B32, $connect->recv(4));
+                        $recordSet = $connect->recv($dataLen);
+                        $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($recordSet, 0, 4));
+                        $callback && $callback(ProtocolTool::decode(
+                            ProtocolTool::PRODUCE_REQUEST,
+                            substr($recordSet, 4)
+                        ));
+                    } else {
+                        $connect->send($requestData);
+                    }
+                } catch (\Throwable $exception) {
+                    $this->logger->error($exception->getMessage());
+                } finally {
+                    $connect->release(true);
                 }
             });
         }
