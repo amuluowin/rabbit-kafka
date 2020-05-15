@@ -81,17 +81,16 @@ class Producter implements InitInterface
                         $dataLen = Protocol::unpack(Protocol::BIT_B32, $connect->recv(4));
                         $recordSet = $connect->recv($dataLen);
                         $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($recordSet, 0, 4));
-                        $callback && $callback(ProtocolTool::decode(
-                            ProtocolTool::PRODUCE_REQUEST,
-                            substr($recordSet, 4)
-                        ));
+                        $msg = ProtocolTool::decode(ProtocolTool::PRODUCE_REQUEST, substr($recordSet, 4));
+                        $connect->release(true);
+                        $callback && $callback($msg);
                     } else {
                         $connect->send($requestData);
+                        $connect->release(true);
                     }
                 } catch (\Throwable $exception) {
+                    unset($connect);
                     $this->logger->error($exception->getMessage());
-                } finally {
-                    $connect->release(true);
                 }
             });
         }
@@ -112,6 +111,7 @@ class Producter implements InitInterface
                     $data = $socket->recv($dataLen);
                     $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($data, 0, 4));
                     $result = ProtocolTool::decode(ProtocolTool::METADATA_REQUEST, substr($data, 4));
+                    $socket->release(true);
                     if (!isset($result['brokers'], $result['topics'])) {
                         $this->logger->error('Get metadata is fail, brokers or topics is null.');
                         System::sleep(2);
@@ -120,9 +120,8 @@ class Producter implements InitInterface
                     $this->broker->setData($result['topics'], $result['brokers']);
                     System::sleep($this->broker->getConfig()->getMetadataRefreshIntervalMs() / 1000);
                 } catch (\Throwable $exception) {
+                    unset($socket);
                     $this->logger->error($exception->getMessage());
-                } finally {
-                    $socket->release(true);
                 }
             }
         });
