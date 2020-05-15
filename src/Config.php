@@ -69,7 +69,8 @@ abstract class Config
      * @var mixed[]
      */
     protected $options = [];
-
+    /** @var int */
+    protected $retry = 3;
     /**
      * @var mixed[]
      */
@@ -95,6 +96,14 @@ abstract class Config
         'saslKeytab' => '',
         'saslPrincipal' => '',
     ];
+
+    /**
+     * @return int
+     */
+    public function getRetry(): int
+    {
+        return $this->retry;
+    }
 
     /**
      * @param mixed[] $args

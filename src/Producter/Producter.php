@@ -62,7 +62,7 @@ class Producter implements InitInterface
             $this->isSyncData = true;
             $this->syncMeta();
         }
-
+        $retry = $config->getRetry();
         $recordSet = array_merge($recordSet, array_splice($this->msgBuffer, 0));
         $sendData = $this->convertRecordSet($recordSet);
         foreach ($sendData as $brokerId => $topicList) {
@@ -73,24 +73,31 @@ class Producter implements InitInterface
                 'compression' => $compression,
             ];
             $requestData = ProtocolTool::encode(ProtocolTool::PRODUCE_REQUEST, $params);
-            rgo(function () use ($requestData, $requiredAck, $callback) {
-                try {
-                    $connect = $this->broker->getPoolConnect();
-                    if ($requiredAck !== 0) {
-                        $connect->send($requestData);
-                        $dataLen = Protocol::unpack(Protocol::BIT_B32, $connect->recv(4));
-                        $recordSet = $connect->recv($dataLen);
-                        $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($recordSet, 0, 4));
-                        $msg = ProtocolTool::decode(ProtocolTool::PRODUCE_REQUEST, substr($recordSet, 4));
-                        $connect->release(true);
-                        $callback && $callback($msg);
-                    } else {
-                        $connect->send($requestData);
-                        $connect->release(true);
+            rgo(function () use ($retry, $requestData, $requiredAck, $callback) {
+                while ($retry--) {
+                    try {
+                        $connect = $this->broker->getPoolConnect();
+                        if ($requiredAck !== 0) {
+                            $connect->send($requestData);
+                            $dataLen = Protocol::unpack(Protocol::BIT_B32, $connect->recv(4));
+                            $recordSet = $connect->recv($dataLen);
+                            $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($recordSet, 0, 4));
+                            $msg = ProtocolTool::decode(ProtocolTool::PRODUCE_REQUEST, substr($recordSet, 4));
+                            $connect->release(true);
+                            try {
+                                $callback && $callback($msg);
+                            } catch (\Throwable $exception) {
+                                $this->logger->error($exception->getMessage());
+                            }
+                        } else {
+                            $connect->send($requestData);
+                            $connect->release(true);
+                        }
+                        break;
+                    } catch (\Throwable $exception) {
+                        unset($connect);
+                        $this->logger->error($exception->getMessage());
                     }
-                } catch (\Throwable $exception) {
-                    unset($connect);
-                    $this->logger->error($exception->getMessage());
                 }
             });
         }
