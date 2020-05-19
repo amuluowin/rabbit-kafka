@@ -106,11 +106,12 @@ class Producter implements InitInterface
     public function syncMeta(): void
     {
         rgo(function () {
+            loop:
+            $socket = $this->broker->getPoolConnect();
+            $pool = $this->broker->getPool();
+            $pool->setCurrentCount($pool->getCurrentCount() - 1);
             while (true) {
                 try {
-                    $socket = $this->broker->getPoolConnect();
-                    $pool = $this->broker->getPool();
-                    $pool->setCurrentCount($pool->getCurrentCount() - 1);
                     $params = [];
                     $requestData = ProtocolTool::encode(ProtocolTool::METADATA_REQUEST, $params);
                     $socket->send($requestData);
@@ -118,7 +119,6 @@ class Producter implements InitInterface
                     $data = $socket->recv($dataLen);
                     $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($data, 0, 4));
                     $result = ProtocolTool::decode(ProtocolTool::METADATA_REQUEST, substr($data, 4));
-                    $socket->release(true);
                     if (!isset($result['brokers'], $result['topics'])) {
                         $this->logger->error('Get metadata is fail, brokers or topics is null.');
                         System::sleep(2);
@@ -129,6 +129,7 @@ class Producter implements InitInterface
                 } catch (\Throwable $exception) {
                     unset($socket);
                     $this->logger->error($exception->getMessage());
+                    goto loop;
                 }
             }
         });
