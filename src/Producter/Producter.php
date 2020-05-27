@@ -95,6 +95,7 @@ class Producter implements InitInterface
                         }
                         break;
                     } catch (\Throwable $exception) {
+                        $connect->close();
                         unset($connect);
                         $this->logger->error($exception->getMessage());
                     }
@@ -127,6 +128,7 @@ class Producter implements InitInterface
                     $this->broker->setData($result['topics'], $result['brokers']);
                     System::sleep($this->broker->getConfig()->getMetadataRefreshIntervalMs() / 1000);
                 } catch (\Throwable $exception) {
+                    $socket->close();
                     unset($socket);
                     $this->logger->error($exception->getMessage());
                     goto loop;
