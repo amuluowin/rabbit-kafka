@@ -86,31 +86,33 @@ class Producter implements InitInterface
                         'compression' => $compression,
                     ];
                     $requestData = ProtocolTool::encode(ProtocolTool::PRODUCE_REQUEST, $params);
-                    while ($retry--) {
-                        try {
-                            $connect = $this->broker->getPoolConnect();
-                            $connect->send($requestData);
-                            if ($requiredAck !== 0) {
-                                $dataLen = Protocol::unpack(Protocol::BIT_B32, $connect->recv(4));
-                                $recordSet = $connect->recv($dataLen);
-                                $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($recordSet, 0, 4));
-                                $msg = ProtocolTool::decode(ProtocolTool::PRODUCE_REQUEST, substr($recordSet, 4));
-                                $connect->release(true);
-                                try {
-                                    $callback && $callback($msg);
-                                } catch (\Throwable $exception) {
-                                    $this->logger->error($exception->getMessage());
+                    rgo(function () use ($retry, $requestData, $requiredAck, $callback) {
+                        while ($retry--) {
+                            try {
+                                $connect = $this->broker->getPoolConnect();
+                                $connect->send($requestData);
+                                if ($requiredAck !== 0) {
+                                    $dataLen = Protocol::unpack(Protocol::BIT_B32, $connect->recv(4));
+                                    $recordSet = $connect->recv($dataLen);
+                                    $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($recordSet, 0, 4));
+                                    $msg = ProtocolTool::decode(ProtocolTool::PRODUCE_REQUEST, substr($recordSet, 4));
+                                    $connect->release(true);
+                                    try {
+                                        $callback && $callback($msg);
+                                    } catch (\Throwable $exception) {
+                                        $this->logger->error($exception->getMessage());
+                                    }
+                                } else {
+                                    $connect->release(true);
                                 }
-                            } else {
-                                $connect->release(true);
+                                break;
+                            } catch (\Throwable $exception) {
+                                $connect->close();
+                                unset($connect);
+                                $this->logger->error($exception->getMessage());
                             }
-                            break;
-                        } catch (\Throwable $exception) {
-                            $connect->close();
-                            unset($connect);
-                            $this->logger->error($exception->getMessage());
                         }
-                    }
+                    });
                 }
             }
         });
