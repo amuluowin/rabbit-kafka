@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace rabbit\kafka\Producter;
 
+use Co\Channel;
 use Co\System;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
@@ -20,10 +21,10 @@ class Producter implements InitInterface
     private $broker;
     /** @var RecordValidator */
     private $recordValidator;
-    /** @var array */
-    private $msgBuffer = [];
     /** @var bool */
     private $isSyncData = false;
+    /** @var Channel */
+    private $channel;
 
     /**
      * Producter constructor.
@@ -33,12 +34,14 @@ class Producter implements InitInterface
     {
         $this->broker = $broker;
         $this->recordValidator = new RecordValidator();
+        $this->channel = new Channel();
         ProtocolTool::init($this->broker->getConfig()->getBrokerVersion());
     }
 
     public function init()
     {
         $this->logger = $this->logger ?? new NullLogger();
+        $this->loop();
     }
 
     /**
@@ -49,59 +52,68 @@ class Producter implements InitInterface
      */
     public function send(array $recordSet, ?callable $callback = null): void
     {
-        /** @var ProducterConfig $config */
-        $config = $this->broker->getConfig();
-        $requiredAck = $config->getRequiredAck();
-        $timeout = $config->getTimeout();
-        $compression = $config->getCompression();
-        if (empty($recordSet)) {
-            return;
-        }
+        $this->channel->push([$recordSet, $callback]);
+    }
 
-        if (!$this->isSyncData) {
-            $this->isSyncData = true;
-            $this->syncMeta();
-        }
-        $retry = $config->getRetry();
-        $recordSet = array_merge($recordSet, array_splice($this->msgBuffer, 0));
-        $sendData = $this->convertRecordSet($recordSet);
-        foreach ($sendData as $brokerId => $topicList) {
-            $params = [
-                'required_ack' => $requiredAck,
-                'timeout' => $timeout,
-                'data' => $topicList,
-                'compression' => $compression,
-            ];
-            $requestData = ProtocolTool::encode(ProtocolTool::PRODUCE_REQUEST, $params);
-            rgo(function () use ($retry, $requestData, $requiredAck, $callback) {
-                while ($retry--) {
-                    try {
-                        $connect = $this->broker->getPoolConnect();
-                        if ($requiredAck !== 0) {
+    /**
+     * @throws \Exception
+     */
+    private function loop(): void
+    {
+        rgo(function () {
+            while (true) {
+                [$recordSet, $callback] = $this->channel->pop();
+                /** @var ProducterConfig $config */
+                $config = $this->broker->getConfig();
+                $requiredAck = $config->getRequiredAck();
+                $timeout = $config->getTimeout();
+                $compression = $config->getCompression();
+                if (empty($recordSet)) {
+                    return;
+                }
+
+                if (!$this->isSyncData) {
+                    $this->isSyncData = true;
+                    $this->syncMeta();
+                }
+                $retry = $config->getRetry();
+                $sendData = $this->convertRecordSet($recordSet);
+                foreach ($sendData as $brokerId => $topicList) {
+                    $params = [
+                        'required_ack' => $requiredAck,
+                        'timeout' => $timeout,
+                        'data' => $topicList,
+                        'compression' => $compression,
+                    ];
+                    $requestData = ProtocolTool::encode(ProtocolTool::PRODUCE_REQUEST, $params);
+                    while ($retry--) {
+                        try {
+                            $connect = $this->broker->getPoolConnect();
                             $connect->send($requestData);
-                            $dataLen = Protocol::unpack(Protocol::BIT_B32, $connect->recv(4));
-                            $recordSet = $connect->recv($dataLen);
-                            $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($recordSet, 0, 4));
-                            $msg = ProtocolTool::decode(ProtocolTool::PRODUCE_REQUEST, substr($recordSet, 4));
-                            $connect->release(true);
-                            try {
-                                $callback && $callback($msg);
-                            } catch (\Throwable $exception) {
-                                $this->logger->error($exception->getMessage());
+                            if ($requiredAck !== 0) {
+                                $dataLen = Protocol::unpack(Protocol::BIT_B32, $connect->recv(4));
+                                $recordSet = $connect->recv($dataLen);
+                                $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($recordSet, 0, 4));
+                                $msg = ProtocolTool::decode(ProtocolTool::PRODUCE_REQUEST, substr($recordSet, 4));
+                                $connect->release(true);
+                                try {
+                                    $callback && $callback($msg);
+                                } catch (\Throwable $exception) {
+                                    $this->logger->error($exception->getMessage());
+                                }
+                            } else {
+                                $connect->release(true);
                             }
-                        } else {
-                            $connect->send($requestData);
-                            $connect->release(true);
+                            break;
+                        } catch (\Throwable $exception) {
+                            $connect->close();
+                            unset($connect);
+                            $this->logger->error($exception->getMessage());
                         }
-                        break;
-                    } catch (\Throwable $exception) {
-                        $connect->close();
-                        unset($connect);
-                        $this->logger->error($exception->getMessage());
                     }
                 }
-            });
-        }
+            }
+        });
     }
 
     public function syncMeta(): void
@@ -111,7 +123,7 @@ class Producter implements InitInterface
             $socket = $this->broker->getPoolConnect();
             $pool = $this->broker->getPool();
             $pool->setCurrentCount($pool->getCurrentCount() - 1);
-            while (true) {
+            while ($this->isSyncData) {
                 try {
                     $params = [];
                     $requestData = ProtocolTool::encode(ProtocolTool::METADATA_REQUEST, $params);
