@@ -23,8 +23,6 @@ class Producter implements InitInterface
     private $recordValidator;
     /** @var bool */
     private $isSyncData = false;
-    /** @var Channel */
-    private $channel;
 
     /**
      * Producter constructor.
