@@ -47,9 +47,10 @@ class KafkaTarget extends AbstractTarget
 
     /**
      * @param array $messages
-     * @param bool $flush
+     * @throws Exception
+     * @throws Exception\Protocol
      */
-    public function export(array $messages, bool $flush = true): void
+    public function export(array $messages): void
     {
         foreach ($messages as $module => $message) {
             foreach ($message as $msg) {
