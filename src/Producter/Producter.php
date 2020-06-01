@@ -106,7 +106,7 @@ class Producter implements InitInterface
             loop:
             $socket = $this->broker->getPoolConnect();
             $pool = $this->broker->getPool();
-            $pool->setCurrentCount($pool->getCurrentCount() - 1);
+            $pool->sub();
             while ($this->isSyncData) {
                 try {
                     $params = [];
