@@ -7,6 +7,7 @@ use rabbit\helper\ArrayHelper;
 use rabbit\helper\StringHelper;
 use rabbit\kafka\Producter\Producter;
 use rabbit\log\targets\AbstractTarget;
+use Swoole\Coroutine\Channel;
 
 /**
  * Class KafkaTarget
@@ -38,11 +39,13 @@ class KafkaTarget extends AbstractTarget
     public function __construct(Producter $client)
     {
         $this->client = $client;
+        $this->channel = new Channel();
     }
 
     public function init()
     {
         $this->client->init();
+        $this->dealSend();
     }
 
     /**
@@ -88,14 +91,32 @@ class KafkaTarget extends AbstractTarget
                             $log[$name] = trim($value);
                     }
                 }
-                $this->client->send([
+                $this->channel->push(json_encode($log));
+            }
+        }
+    }
+
+    /**
+     * @throws Exception
+     * @throws Exception\Protocol
+     */
+    protected function dealSend(): void
+    {
+        rgo(function () {
+            while (true) {
+                $logs = [];
+                for ($i = 0; $i < $this->batch; $i++) {
+                    $log = $this->channel->pop($this->waitTime);
+                    $log !== false && $logs[] = $log;
+                }
+                !empty($logs) && $this->client->send([
                     [
                         'topic' => $this->topic,
-                        'value' => json_encode($log),
+                        'value' => implode(',', $logs),
                         'key' => ''
                     ]
                 ]);
             }
-        }
+        });
     }
 }

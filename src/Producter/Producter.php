@@ -32,7 +32,6 @@ class Producter implements InitInterface
     {
         $this->broker = $broker;
         $this->recordValidator = new RecordValidator();
-        $this->channel = new Channel();
         ProtocolTool::init($this->broker->getConfig()->getBrokerVersion());
     }
 
