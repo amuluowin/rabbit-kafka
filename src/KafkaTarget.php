@@ -107,7 +107,10 @@ class KafkaTarget extends AbstractTarget
                 $logs = [];
                 for ($i = 0; $i < $this->batch; $i++) {
                     $log = $this->channel->pop($this->waitTime);
-                    $log !== false && $logs[] = $log;
+                    if ($log === false) {
+                        break;
+                    }
+                    $logs[] = $log;
                 }
                 !empty($logs) && $this->client->send([
                     [
