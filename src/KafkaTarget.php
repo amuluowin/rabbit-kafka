@@ -4,6 +4,7 @@
 namespace rabbit\kafka;
 
 use rabbit\helper\ArrayHelper;
+use rabbit\helper\ExceptionHelper;
 use rabbit\helper\StringHelper;
 use rabbit\kafka\Producter\Producter;
 use rabbit\log\targets\AbstractTarget;
@@ -104,21 +105,25 @@ class KafkaTarget extends AbstractTarget
     {
         rgo(function () {
             while (true) {
-                $logs = [];
-                for ($i = 0; $i < $this->batch; $i++) {
-                    $log = $this->channel->pop($this->waitTime);
-                    if ($log === false) {
-                        break;
+                try {
+                    $logs = [];
+                    for ($i = 0; $i < $this->batch; $i++) {
+                        $log = $this->channel->pop($this->waitTime);
+                        if ($log === false) {
+                            break;
+                        }
+                        $logs[] = $log;
                     }
-                    $logs[] = $log;
+                    !empty($logs) && $this->client->send([
+                        [
+                            'topic' => $this->topic,
+                            'value' => implode(',', $logs),
+                            'key' => ''
+                        ]
+                    ]);
+                } catch (\Throwable $exception) {
+                    echo ExceptionHelper::dumpExceptionToString($exception);
                 }
-                !empty($logs) && $this->client->send([
-                    [
-                        'topic' => $this->topic,
-                        'value' => implode(',', $logs),
-                        'key' => ''
-                    ]
-                ]);
             }
         });
     }
