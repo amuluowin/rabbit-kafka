@@ -37,6 +37,7 @@ class KafkaTarget extends AbstractTarget
      */
     public function __construct(Producter $client)
     {
+        parent::__construct();
         $this->client = $client;
     }
 
