@@ -4,11 +4,9 @@
 namespace rabbit\kafka;
 
 use rabbit\helper\ArrayHelper;
-use rabbit\helper\ExceptionHelper;
 use rabbit\helper\StringHelper;
 use rabbit\kafka\Producter\Producter;
 use rabbit\log\targets\AbstractTarget;
-use Swoole\Coroutine\Channel;
 
 /**
  * Class KafkaTarget
@@ -40,7 +38,6 @@ class KafkaTarget extends AbstractTarget
     public function __construct(Producter $client)
     {
         $this->client = $client;
-        $this->channel = new Channel();
     }
 
     public function init()
@@ -103,28 +100,22 @@ class KafkaTarget extends AbstractTarget
      */
     protected function dealSend(): void
     {
-        rgo(function () {
-            while (true) {
-                try {
-                    $logs = [];
-                    for ($i = 0; $i < $this->batch; $i++) {
-                        $log = $this->channel->pop($this->waitTime);
-                        if ($log === false) {
-                            break;
-                        }
-                        $logs[] = $log;
-                    }
-                    !empty($logs) && $this->client->send([
-                        [
-                            'topic' => $this->topic,
-                            'value' => implode(',', $logs),
-                            'key' => ''
-                        ]
-                    ]);
-                } catch (\Throwable $exception) {
-                    echo ExceptionHelper::dumpExceptionToString($exception);
+        goloop(function () {
+            $logs = [];
+            for ($i = 0; $i < $this->batch; $i++) {
+                $log = $this->channel->pop($this->waitTime);
+                if ($log === false) {
+                    break;
                 }
+                $logs[] = $log;
             }
+            !empty($logs) && $this->client->send([
+                [
+                    'topic' => $this->topic,
+                    'value' => implode(',', $logs),
+                    'key' => ''
+                ]
+            ]);
         });
     }
 }
