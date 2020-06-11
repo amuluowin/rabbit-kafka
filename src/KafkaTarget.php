@@ -43,8 +43,8 @@ class KafkaTarget extends AbstractTarget
 
     public function init()
     {
+        parent::init();
         $this->client->init();
-        $this->dealSend();
     }
 
     /**
@@ -99,17 +99,10 @@ class KafkaTarget extends AbstractTarget
      * @throws Exception
      * @throws Exception\Protocol
      */
-    protected function dealSend(): void
+    protected function write(): void
     {
         goloop(function () {
-            $logs = [];
-            for ($i = 0; $i < $this->batch; $i++) {
-                $log = $this->channel->pop($this->waitTime);
-                if ($log === false) {
-                    break;
-                }
-                $logs[] = $log;
-            }
+            $logs = $this->getLogs();
             !empty($logs) && $this->client->send([
                 [
                     'topic' => $this->topic,
