@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace rabbit\kafka\Producter;
 
-use Co\Channel;
 use Co\System;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
@@ -81,17 +80,16 @@ class Producter implements InitInterface
                             $recordSet = $connect->recv($dataLen);
                             $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($recordSet, 0, 4));
                             $msg = ProtocolTool::decode(ProtocolTool::PRODUCE_REQUEST, substr($recordSet, 4));
-                            $connect->release(true);
                             try {
                                 $callback && $callback($msg);
                             } catch (\Throwable $exception) {
                                 $this->logger->error($exception->getMessage());
                             }
-                        } else {
-                            $connect->release(true);
                         }
+                        $connect->release(true);
                         break;
                     } catch (\Throwable $exception) {
+                        $connect->getPool()->sub();
                         $this->logger->error($exception->getMessage());
                     }
                 }
@@ -102,29 +100,30 @@ class Producter implements InitInterface
     public function syncMeta(): void
     {
         rgo(function () {
-            loop:
-            $socket = $this->broker->getPoolConnect();
-            $pool = $this->broker->getPool();
-            $pool->sub();
             while ($this->isSyncData) {
-                try {
-                    $params = [];
-                    $requestData = ProtocolTool::encode(ProtocolTool::METADATA_REQUEST, $params);
-                    $socket->send($requestData);
-                    $dataLen = Protocol::unpack(Protocol::BIT_B32, $socket->recv(4));
-                    $data = $socket->recv($dataLen);
-                    $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($data, 0, 4));
-                    $result = ProtocolTool::decode(ProtocolTool::METADATA_REQUEST, substr($data, 4));
-                    if (!isset($result['brokers'], $result['topics'])) {
-                        $this->logger->error('Get metadata is fail, brokers or topics is null.');
-                        System::sleep(2);
-                        continue;
+                $socket = $this->broker->getPoolConnect();
+                $pool = $this->broker->getPool();
+                $pool->sub();
+                while ($this->isSyncData) {
+                    try {
+                        $params = [];
+                        $requestData = ProtocolTool::encode(ProtocolTool::METADATA_REQUEST, $params);
+                        $socket->send($requestData);
+                        $dataLen = Protocol::unpack(Protocol::BIT_B32, $socket->recv(4));
+                        $data = $socket->recv($dataLen);
+                        $correlationId = Protocol::unpack(Protocol::BIT_B32, substr($data, 0, 4));
+                        $result = ProtocolTool::decode(ProtocolTool::METADATA_REQUEST, substr($data, 4));
+                        if (!isset($result['brokers'], $result['topics'])) {
+                            $this->logger->error('Get metadata is fail, brokers or topics is null.');
+                            System::sleep(2);
+                            continue;
+                        }
+                        $this->broker->setData($result['topics'], $result['brokers']);
+                        System::sleep($this->broker->getConfig()->getMetadataRefreshIntervalMs() / 1000);
+                    } catch (\Throwable $exception) {
+                        $this->logger->error($exception->getMessage());
+                        break;
                     }
-                    $this->broker->setData($result['topics'], $result['brokers']);
-                    System::sleep($this->broker->getConfig()->getMetadataRefreshIntervalMs() / 1000);
-                } catch (\Throwable $exception) {
-                    $this->logger->error($exception->getMessage());
-                    goto loop;
                 }
             }
         });
