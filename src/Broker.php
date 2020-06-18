@@ -90,7 +90,7 @@ class Broker extends BaseObject
      */
     public function getPoolConnect(): AbstractSocketConnection
     {
-        return $this->pool->getConnection();
+        return $this->pool->get();
     }
 
     public function getConfig(): Config
