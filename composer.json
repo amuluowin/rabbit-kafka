@@ -3,9 +3,8 @@
   "description": "rabbit kafka",
   "type": "library",
   "require": {
-    "php": "^7.1",
-    "rabbit/framework": "^1.0",
-    "rabbit/socket": "^1.0"
+    "php": ">=7.4.0",
+    "rabbit/base": "dev-master"
   },
   "license": "MIT",
   "authors": [
