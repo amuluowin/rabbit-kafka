@@ -1,21 +1,17 @@
 <?php
 
+declare(strict_types=1);
 
-namespace rabbit\kafka;
+namespace Rabbit\Kafka;
 
-use rabbit\helper\ArrayHelper;
-use rabbit\helper\StringHelper;
-use rabbit\kafka\Producter\Producter;
-use rabbit\log\targets\AbstractTarget;
+use longlang\phpkafka\Producer\Producer;
+use Rabbit\Base\Helper\ArrayHelper;
+use Rabbit\Base\Helper\StringHelper;
+use Rabbit\Log\Targets\AbstractTarget;
 
-/**
- * Class KafkaTarget
- * @package rabbit\kafka
- */
 class KafkaTarget extends AbstractTarget
 {
-    /** @var Client */
-    protected $client;
+    protected Producer $client;
     /** @var array */
     protected $template = [
         ['datetime', 'timespan'],
@@ -35,16 +31,10 @@ class KafkaTarget extends AbstractTarget
      * KafkaTarget constructor.
      * @param Client $client
      */
-    public function __construct(Producter $client)
+    public function __construct(Producer $client)
     {
         parent::__construct();
         $this->client = $client;
-    }
-
-    public function init()
-    {
-        parent::init();
-        $this->client->init();
     }
 
     /**
@@ -101,15 +91,9 @@ class KafkaTarget extends AbstractTarget
      */
     protected function write(): void
     {
-        goloop(function () {
+        loop(function () {
             $logs = $this->getLogs();
-            !empty($logs) && $this->client->send([
-                [
-                    'topic' => $this->topic,
-                    'value' => implode(',', $logs),
-                    'key' => ''
-                ]
-            ]);
+            !empty($logs) && $this->client->send($this->topic, implode(',', $logs));
         });
     }
 }

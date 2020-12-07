@@ -4,7 +4,8 @@
   "type": "library",
   "require": {
     "php": ">=7.4.0",
-    "rabbit/base": "dev-master"
+    "rabbit/base": "dev-master",
+    "longlang/phpkafka": "^1.0"
   },
   "license": "MIT",
   "authors": [
@@ -15,7 +16,7 @@
   ],
   "autoload": {
     "psr-4": {
-      "rabbit\\kafka\\": "src/"
+      "Rabbit\\Kafka\\": "src/"
     }
   }
 }
