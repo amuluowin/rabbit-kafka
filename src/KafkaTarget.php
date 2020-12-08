@@ -12,8 +12,7 @@ use Rabbit\Log\Targets\AbstractTarget;
 class KafkaTarget extends AbstractTarget
 {
     protected Producer $client;
-    /** @var array */
-    protected $template = [
+    protected array $template = [
         ['datetime', 'timespan'],
         ['level', 'string'],
         ['request_uri', 'string'],
@@ -25,7 +24,7 @@ class KafkaTarget extends AbstractTarget
         ['message', 'string']
     ];
 
-    protected $topic = 'seaslog';
+    protected string $topic = 'seaslog';
 
     /**
      * KafkaTarget constructor.
