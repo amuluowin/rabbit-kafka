@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace Rabbit\Kafka;
 
 use longlang\phpkafka\Producer\Producer;
+use longlang\phpkafka\Producer\ProducerConfig;
 use Rabbit\Base\Helper\ArrayHelper;
 use Rabbit\Base\Helper\StringHelper;
 use Rabbit\Log\Targets\AbstractTarget;
 
 class KafkaTarget extends AbstractTarget
 {
-    protected Producer $client;
+    protected ?Producer $client = null;
+    protected ProducerConfig $config;
     protected array $template = [
         ['datetime', 'timespan'],
         ['level', 'string'],
@@ -26,14 +28,10 @@ class KafkaTarget extends AbstractTarget
 
     protected string $topic = 'seaslog';
 
-    /**
-     * KafkaTarget constructor.
-     * @param Client $client
-     */
-    public function __construct(Producer $client)
+    public function __construct(ProducerConfig $config)
     {
         parent::__construct();
-        $this->client = $client;
+        $this->config = $config;
     }
 
     /**
@@ -90,6 +88,9 @@ class KafkaTarget extends AbstractTarget
      */
     protected function write(): void
     {
+        if ($this->client === null) {
+            $this->client = new Producer($this->config);
+        }
         loop(function () {
             $logs = $this->getLogs();
             !empty($logs) && $this->client->send($this->topic, implode(',', $logs));
