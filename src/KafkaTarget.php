@@ -89,7 +89,7 @@ class KafkaTarget extends AbstractTarget
         if ($this->client === null) {
             $this->client = new Producer($this->config);
         }
-        loop(function () {
+        loop(function (): void {
             $logs = $this->getLogs();
             !empty($logs) && $this->client->send($this->topic, implode(',', $logs));
         });
